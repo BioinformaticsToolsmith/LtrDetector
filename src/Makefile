@@ -5,7 +5,6 @@ CXX = /usr/local/bin/g++-8
 CXXFLAGS = -std=c++11 -g -O3 -fopenmp -fmessage-length=0 #-Wall 
 
 IDIR =-I/home/girgishz/cppLib/HMMlib/include -I/home/girgishz/cppLib/boost_1_47_0/include
-
 LDIR =-L/home/girgishz/cppLib/HMMlib/include
 
 #
