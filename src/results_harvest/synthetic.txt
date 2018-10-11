@@ -1,0 +1,7 @@
+Trial,Found,Guesses,Total 
+synthetic/tenTest,74,78,91
+synthetic/fiveTest,91,92,92
+synthetic/fifteenTest,13,15,92
+synthetic/zeroTest,90,90,90
+synthetic/thirtyTest,0,0,90
+synthetic/twentyTest,0,0,93

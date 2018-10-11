@@ -1,0 +1,13 @@
+Trial,Found,Guesses,Total 
+irgsp/chr10,58,351,125
+irgsp/chr9,40,333,106
+irgsp/chr12,75,451,137
+irgsp/chr3,76,400,149
+irgsp/chr2,83,416,141
+irgsp/chr1,0,493,137
+irgsp/chr7,69,449,122
+irgsp/chr8,69,419,156
+irgsp/chr5,63,411,143
+irgsp/chr6,71,463,138
+irgsp/chr4,91,509,195
+irgsp/chr11,68,467,137

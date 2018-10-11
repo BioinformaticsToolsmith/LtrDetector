@@ -1,0 +1,6 @@
+Trial,Found,Guesses,Total 
+thaliana/chr1,21,111,53
+thaliana/chr2,19,173,61
+thaliana/chr4,24,236,47
+thaliana/chr3,19,331,47
+thaliana/chr5,23,386,48
