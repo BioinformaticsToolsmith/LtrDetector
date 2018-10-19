@@ -4,9 +4,9 @@ pip is required to install dependencies. virtualenv is recommended to isolate pa
 
 `pip install -r requirements.txt`
 
-You will need to run LtrDetector with the -rawScores and/or -cleanedScores flags and pass the 
+You will need to run LtrDetector with the -rawScores and/or -cleanedScores flags and pass the name of a bedfile containing repeats, a destination folder, and the location of the scores file produced by LtrDetector.
 
-`python visualize.py `
+`python visualize.py bedFile destination scoresFile `
 
 
 ## Ground Truth Generation
@@ -24,19 +24,27 @@ http://www.repeatmasker.org/
 
 5. Download the LTR-RTs sequences from REPBASE (you will need an account) :
 https://www.girinst.org/repbase/update/browse.php?type=LTR+Retrotransposon&format=FASTA
-Save as \<organismName>/\<repeatFileName>
+
+6. Save as \<organismName>/\<repeatFileName>
 
 
-6. Place all FASTA files for an organism into a folder called \<organismName\>/Fa.
+7. Place all FASTA files for an organism into a folder called \<organismName\>/Fa.
 
-7. Place all REPEATMASKER output files in a folder \<organismName\>/Out. 
+8. Place all REPEATMASKER output files in a folder \<organismName\>/Out. 
 
-8. ` python generateTruthPipeline.py /\<organismName\> \<repeatFileName\>
+9. ` python generateTruthPipeline.py /organismName  repeatFileName `
 
-##False Positives
+## False Positives Evaluation
 
+Assumes that LtrDetector results are in a file called organismName/detector, and that REPEATMASKER output has been generated.
 
+` python correctionPipeline.py detector organismName FPSummary.txt `
 
+## True Positives Evaluation
+
+Assumes that LtrDetector results are in a file called organismName/detector, and that ground truth script has been run.
+
+` python evaluate.py detector organismName TPSummary.txt `
 
 
 
