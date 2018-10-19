@@ -1,11 +1,13 @@
 # LtrDetector
- LtrDetector is an accurate and efficient software tool for de-novo detection of Long Terminal Repeat Retro-transposons. It is currently available for Unix/Linux/MacOS. Academic papers should cite 
+ LtrDetector is an accurate and efficient software tool for *de-novo* detection of Long Terminal Repeat retro-transposons. It is currently available for Unix/Linux/MacOS. Academic papers should cite 
 
 ## Installation
 
+Open a terminal and run the commands:
+
 `git clone ourRepo ` 
 
-`cd LtrDetector `
+`cd /LtrDetector `
 
 Run start.py to set up the proper directory structure. Requires Python 2.7
 
@@ -26,7 +28,7 @@ bin/LtrDetector -chromDir <pathToChromosomeDirectory> -destDir <pathToOutputDire
 
 ```
 
-Other arguments can be invoked in the form: -arg val 
+Other arguments can be invoked in the form: -arg  *val* 
 
 ### Optional arguments
 | -arg     | Description | Default |
@@ -45,13 +47,3 @@ Other arguments can be invoked in the form: -arg val
 -cleanedScores prints the scores after merging to a file cleanedScores.txt 
 
 
-
-## Evaluation scripts
-
-You will need to download bedtools and NCBI blastn to run the ground truth generation pipeline.
-
-pip is required to install dependencies. virtualenv is recommended to isolate packages.
-
-`pip install -r requirements.txt`
-
-###groundTruth

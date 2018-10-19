@@ -1,4 +1,4 @@
-import os 
+import os,sys 
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -27,9 +27,14 @@ def slice(bedfile,name):
 
     for el in coords:
 
+
+
+        
         print el
         start = int(el[0])
         end = int(el[1])
+
+       
 
         
 
@@ -38,7 +43,9 @@ def slice(bedfile,name):
         
 
         bounds =[start,mid1,mid2,end-1]
-        print bounds
+        
+        first = [start,mid1]
+        second = [mid2,end-1]
         
         slice =name+"/"+el[0]+"-"+el[1]+".png"
 
@@ -49,24 +56,35 @@ def slice(bedfile,name):
 
         
 
-        d = {"idx":x, "score":y}
         
 
-        df = pd.DataFrame(d,index = d["idx"])
+        d = {"index":x, "score":y}
+        
 
-        graph = df.plot(x = "idx", y = "score")
+        df = pd.DataFrame(d,index = d["index"])
+        title = "LTR("+str(start)+":"+str(end)+")"
 
-        #f,ax = plt.subplots(1)
+        graph = df.plot(x = "index", y = "score",legend=False,title=title)
+
+        graph.set_xlabel("Index")
+        graph.set_ylabel("Score")
 
         graph.plot(bounds,[0.0]*len(bounds),"rv")
 
+
+
         fig = graph.get_figure()
-        #plt.plot( bounds, marker = "v", markerfacecolor ="r")
-        fig.savefig(slice)
+        fig.tight_layout()
+
+        fig.savefig(slice,dpi = 200)
 
 
 if __name__ == "__main__":
-    slice("thaliana/Truth/chr5Truth.bed", "thaliana/test")
+
+    repeats = sys.argv[1]
+    outFolder = sys.argv[2]
+    #slice("thaliana/Test/chr5Detector.bed", "thaliana/test") 
+    slice(repeats,outFolder)
 
         
         

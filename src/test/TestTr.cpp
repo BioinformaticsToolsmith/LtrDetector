@@ -25,6 +25,8 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <algorithm>
+#include <vector>
 #include <fstream>
 
 using namespace std;
@@ -32,6 +34,18 @@ using namespace std;
 using namespace nonltr;
 using namespace utility;
 using namespace tr;
+
+int getOptionalArg(vector<string> * args, string option){
+    string answer = "-1";
+	auto it = std::find(args->begin(),args->end(),option);
+
+	if(it!=args->end() & ++it !=args->end()){
+
+		answer = * it;
+	}
+
+	return stoi(answer);
+}
 
 
 
@@ -41,23 +55,103 @@ int main(int argc, char * argv[]) {
     //string csvFile = string("../src/output/trial1.csv");
 	//string bedFile = string("../src/output/trial1.bed");
 	//string chromFile = string(argv[1]);
-	string chromDir = string(argv[1]);
-	string outputDir = string(argv[2]);
+
+	int minDist = 2000;
+	int maxDist = 18000;
+	int minLenLTR = 100;
+	int maxLenLTR = 2000;
+	int identity = 85;
+	int k = 14;
+	int minPlateauLength = 10;
+	int gapTol = 200;
+	string chromDir ="";
+	string outputDir = "";
+	bool printRawScores = false;
+	bool printCleanScores = false;
+
+	//string options [] = {"-minLen", "-maxLen","-minLenLTR", "-maxLenLTR", "-id", "-k", "-plateauSeed","-gapTol"};
+
+	std::vector<string> * argList = new vector<string>();
+
+	for(int i = 1;i<argc;i++){
+
+		argList->push_back(string(argv[i]));
+	}
 	
-	int minDist = atoi(argv[3]);
-    int maxDist = atoi(argv[4]);
+	auto src = std::find(argList->begin(),argList->end(),"-chromDir");
 
-	int minLenLTR = atoi(argv[5]);
-	int maxLenLTR = atoi(argv[6]);
+	if(src!=argList->end() & ++src !=argList->end()){
 
-	int identity = atoi(argv[7]);
+		 chromDir = *src;
+	}
 
-	int k = atoi(argv[8]);
-	int minPlateauLength = atoi(argv[9]);
-	int gapTol =atoi(argv[10]);
+	else{
+		cout<<" \'-chromDir\' is a required argument"<<endl;
+		exit(1);
+	}
+
+	auto dest = std::find(argList->begin(),argList->end(),"-destDir");
+
+	if(dest!=argList->end() & ++dest != argList->end()){
+
+		outputDir = *dest;
+	}
+	else{
+		cout<<" \'-destDir\' is a required argument"<<endl;
+		exit(1);
+	}
+
+	int test = getOptionalArg(argList, "-minLen");
+
+	if(test!=-1){
+		minDist = test;
+	}
+
+	test = getOptionalArg(argList, "-maxLen");
+
+	if(test!=-1){
+		maxDist = test;
+	}
+
+	test = getOptionalArg(argList,"-minLenLTR");
+
+	if(test!=-1){
+
+		minLenLTR = test;
+	}
+
+	test = getOptionalArg(argList, "-maxLenLTR");
+
+	if(test!=-1){
+		maxLenLTR = test;
+	}
+
+	test = getOptionalArg(argList,"-id");
+
+	if(test!= -1){
+
+		identity = test;
+	}
+
+	test = getOptionalArg(argList, "-k");
+
+	if(test!=-1){
+		k = test;
+	}
+
+	test = getOptionalArg(argList, "-plateauSeed");
+
+	if(test!=-1){
+		minPlateauLength = test;
+	}
+
+	test = getOptionalArg(argList, "-gapTol");
+
+	if(test!=-1){
+		gapTol = test;
+	}
 
 	
-
 	
 	//string csvFile = string(argv[9]);
 	
@@ -92,6 +186,16 @@ int main(int argc, char * argv[]) {
 		
 		string bedFile = outputDir+"/"+name+"Detector.bed";
 
+		cout<<chromFile<<endl;
+		cout<<bedFile<<endl;
+		cout<<minDist<<endl;
+		cout<<maxDist<<endl;
+		cout<<minLenLTR<<endl;
+		cout<<maxLenLTR<<endl;
+		cout<<identity<<endl;
+		cout<<k<<endl;
+		cout<<minPlateauLength<<endl;
+		cout<<gapTol<<endl;
 		//chrom = new ChromosomeOneDigit(chromFile);
 		collector = new TrCollector(chromFile, bedFile,name, minDist, maxDist, minLenLTR, maxLenLTR,identity,k, minPlateauLength, gapTol);
 

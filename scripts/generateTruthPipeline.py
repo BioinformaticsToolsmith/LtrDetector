@@ -508,12 +508,14 @@ def processChromosome(directory, repeatsFile):
 
   
 if __name__ == "__main__":
-    #processChromosome("thaliana", "thaliana/Arabidopsis_thaliana_LTR_Retrotransposon.txt")
-    processChromosome("gmax", "gmax/Soybean_LTR_Retrotransposon.txt")
-    #processChromosome("irgsp",'irgsp/Oryza_LTR_Retrotransposon.txt')
-    #processChromosome("barley", "barley/Triticum_LTR_Retrotransposon.txt")
-    #processChromosome("zMays", "zMays/Panicoideae_LTR_Retrotransposon.txt")
-    #buildGroundTruth("thaliana/Arabidopsis_thaliana_LTR_Retrotransposon.txt","thaliana/Out/chr3.fa.out","thaliana/Fa/chr3.fa","thaliana/ATChr3")
+    
+
+    folder = sys.argv[1]
+
+    repbaseFile = sys.argv[2]
+
+    processChromosome(folder, repbaseFile)
+
 
 
 

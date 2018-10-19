@@ -1,6 +1,6 @@
 
 
-import os
+import os,sys
 import subprocess
 import shutil
 from collections import OrderedDict
@@ -35,7 +35,7 @@ def findRepeats(parent,name):
                     dna = "DNA" in fields[10]
             
                     
-                    if complex and not ltr and sine_line :
+                    if complex and not ltr :
                         family = fields[9]
                         start = fields[5]
                         end = fields[6]
@@ -85,7 +85,7 @@ def findPotentialFP(parent,tool,name):
 
     groundTruth = parent +"/"+"Truth"+"/"+name+"Truth"+".bed"
 
-    params = ['bedtools', 'intersect', '-a', detection, '-b',groundTruth, '-v', '-f', '0.95', '-F', '0.95']
+    params = ['bedtools', 'intersect', '-a', detection, '-b',groundTruth, '-sorted', '-v', '-f', '0.95', '-F', '0.95']
 
     #params = params = ['bedops', "-n", "95%", detection, groundTruth]
 
@@ -117,6 +117,7 @@ def findOverlaps(parent,tool,name):
 
     result = subprocess.check_output(params)
 
+
     overlaps = parent+"/"+tool+"/"+name+"Overlaps.bed"
 
     with open(overlaps,"w") as outFile:
@@ -128,7 +129,6 @@ def processOverlaps(parent,tool,name):
 
     overlapFile = parent+"/"+tool+"/"+name+"Overlaps.bed"
 
-    print overlapFile
 
     storage = []
 
@@ -150,8 +150,9 @@ def processOverlaps(parent,tool,name):
 
                 next = lines[j]
 
-                print next
-                print curr
+             
+
+            
 
                 start_curr = curr.split("\t")[1]
                 start_next = next.split("\t")[1]
@@ -174,8 +175,7 @@ def processOverlaps(parent,tool,name):
     false_positives = []
 
     for s in storage:
-        print "PRINTING S"
-        print s
+       
         repeat_overlaps =[]
 
         for el in s:
@@ -197,7 +197,6 @@ def processOverlaps(parent,tool,name):
                 repeat_overlaps.append(repeat_start)
         
         origins = [families[f] for f in repeat_overlaps if f in families]
-        print origins
 
         if len(origins)>=2:
 
@@ -339,8 +338,9 @@ def countFalsePositives(parent,tool,summary):
 
 
 if __name__ == "__main__":
-    #countFalsePositives("sbicolor", "detector", "summaryFP.txt")
-    #countFalsePositives("barley","detector","summaryFP_9_13.txt")
-    #countFalsePositives("thaliana","detector", "summary_9_12.txt")
-    #countFalsePositives("zMays","detector","summaryFP.txt")
-    countFalsePositives("irgsp","detector","summaryFP_9_12.txt")
+
+    tool = sys.argv[1]
+    directory = sys.argv[2]
+    output_name = sys.argv[3]
+    #countFalsePositives("detector", "irgsp", "summaryFP.txt")
+    countFalsePositives(directory,tool,output_name)
