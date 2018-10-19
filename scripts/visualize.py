@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
-def slice(bedfile,name):
+def slice(bedfile,name,scoresFile):
 
     if not os.path.exists(name):
         os.mkdir(name)
@@ -21,7 +21,7 @@ def slice(bedfile,name):
     
     scores =[]
 
-    with open("/home/joseph/Projects/ltr/output/cleanedScores.csv",'r') as infile:
+    with open(scoresFile,'r') as infile:
         scores = infile.readlines()
         
 
@@ -83,6 +83,7 @@ if __name__ == "__main__":
 
     repeats = sys.argv[1]
     outFolder = sys.argv[2]
+    scoresFile = sys.arg[3]
     #slice("thaliana/Test/chr5Detector.bed", "thaliana/test") 
     slice(repeats,outFolder)
 
