@@ -1,5 +1,5 @@
 # LtrDetector
- LtrDetector is an accurate and efficient software tool for *de-novo* detection of Long Terminal Repeat retro-transposons. It is currently available for Unix/Linux/MacOS. Academic papers should cite 
+ LtrDetector is an accurate and efficient software tool for *de-novo* detection of Long Terminal Repeat retro-transposons. It is currently available for Unix/Linux/MacOS. https://www.biorxiv.org/content/early/2018/10/22/448969 
 
 ## Installation
 
