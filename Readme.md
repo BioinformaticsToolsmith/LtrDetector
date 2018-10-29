@@ -7,13 +7,13 @@ Open a terminal and run the commands:
 
 `git clone ourRepo ` 
 
-`cd /LtrDetector `
+`cd /LtrDetector/src `
 
 Run start.py to set up the proper directory structure. Requires Python 2.7
 
 ` python start.py `
 
-Compilation requires GNU Make.
+Compilation requires GNU Make and the GNU.
 
 ` make tr `
 
