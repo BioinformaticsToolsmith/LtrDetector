@@ -19,7 +19,6 @@ On Ubuntu you may need to get the latest version of the GNU compiler with:
 `sudo apt-get install gcc-8 g++-8`
 
 For MacOS you must use [homebrew](https://brew.sh/) to download OpenMP using:
-
 `brew install libomp`
 
 Based on your OS, uncomment lines on the Makefile.
