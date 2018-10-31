@@ -1,11 +1,10 @@
-CXX = /usr/local/bin/g++-8
-# CXX = /usr/bin/g++
+#CXX = /usr/local/bin/g++-8  #Linux(Ubuntu)
+CXX = /usr/bin/g++ #MacOS
 
-# CXXFLAGS =	-O3 -g -fmessage-length=0 -Wall 
-CXXFLAGS = -std=c++11 -g -O3 -fopenmp -fmessage-length=0 #-Wall 
+#CXXFLAGS = -std=c++11 -g -O3 -fopenmp -fmessage-length=0 # Linux
+CXXFLAGS = -Xpreprocessor -fopenmp -lomp  -std=c++11 -g -O3 -fmessage-length=0 #MacOS
 
-IDIR =-I/home/girgishz/cppLib/HMMlib/include -I/home/girgishz/cppLib/boost_1_47_0/include
-LDIR =-L/home/girgishz/cppLib/HMMlib/include
+
 
 #
 # Objects
