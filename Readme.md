@@ -1,23 +1,42 @@
 # LtrDetector
- LtrDetector is an accurate and efficient software tool for *de-novo* detection of Long Terminal Repeat retro-transposons. It is currently available for Unix/Linux/MacOS. https://www.biorxiv.org/content/early/2018/10/22/448969 
+ LtrDetector is an accurate and efficient software tool for *de-novo* detection of Long Terminal Repeat retro-transposons. It is currently available for Linux(tested on Ubuntu) and MacOS. https://www.biorxiv.org/content/early/2018/10/22/448969 
 
 ## Installation
 
 Open a terminal and run the commands:
 
-`git clone ourRepo ` 
-
+`git clone https://github.com/TulsaBioinformaticsToolsmith/LtrDetector.git`
 `cd /LtrDetector/src `
 
 Run start.py to set up the proper directory structure. Requires Python 2.7
 
 ` python start.py `
 
-Compilation requires GNU Make and the GNU.
+Compilation requires [GNU Make](https://www.gnu.org/software/make/). 
 
+On Ubuntu you may need to get the latest version of the GNU compiler with:
+`sudo apt-get install gcc-8 g++-8`
+
+For MacOS you must use [homebrew](https://brew.sh/) to download OpenMP using:
+
+`brew install libomp`
+
+Based on your OS, uncomment lines on the Makefile.
+
+For MacOS
+```CXX = /usr/bin/g++ ```
+and
+```CXXFLAGS = -Xpreprocessor -fopenmp -lomp  -std=c++11 -g -O3 -fmessage-length=0 ```
+
+For Ubuntu
+```CXX = /usr/local/bin/g++-8 ```
+and 
+```CXXFLAGS = -std=c++11 -g -O3 -fopenmp -fmessage-length=0```
+
+Finally,
 ` make tr `
 
-Compilation is sucessfull if the binary LtrDetector exists in /bin
+Compilation is sucessful if the binary LtrDetector exists in /bin
 
 ## Usage
 
