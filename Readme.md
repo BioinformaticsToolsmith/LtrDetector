@@ -5,7 +5,8 @@
 
 Open a terminal and run the commands:
 
-`git clone https://github.com/TulsaBioinformaticsToolsmith/LtrDetector.git
+`git clone https://github.com/TulsaBioinformaticsToolsmith/LtrDetector.git`
+
 `cd /LtrDetector/src `
 
 Run start.py to set up the proper directory structure. Requires Python 2.7
