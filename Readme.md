@@ -16,7 +16,7 @@ Run start.py to set up the proper directory structure. Requires Python 2.7
 Compilation requires [GNU Make](https://www.gnu.org/software/make/). 
 
 On Ubuntu you may need to get the latest version of the GNU compiler with:
-`sudo apt-get install gcc-8 g++-8`
+`sudo apt-get install g++
 
 For MacOS you must use [homebrew](https://brew.sh/) to download OpenMP using:
 `brew install libomp`
@@ -29,9 +29,11 @@ and
 ```CXXFLAGS = -Xpreprocessor -fopenmp -lomp  -std=c++11 -g -O3 -fmessage-length=0 ```
 
 For Ubuntu
-```CXX = /usr/local/bin/g++-8 ```
+```CXX = /usr/local/bin/g++ ```
 and 
 ```CXXFLAGS = -std=c++11 -g -O3 -fopenmp -fmessage-length=0```
+*Note* Depending on your installation of g++, the compiler location may instead be
+```CXX =/usr/bin/g++```
 
 Finally,
 ` make tr `
