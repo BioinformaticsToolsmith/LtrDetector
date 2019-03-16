@@ -296,8 +296,8 @@ void Util::revCompDig(const char * s, int start, int end, string * rc) {
 		case 2:
 			rc->append(1, 1);
 			break;
-	//added on 16 Nov 2017 to avoid InvalidInputException on bps of type 'N'
-			case 78:
+		//added on 16 Nov 2017 to avoid InvalidInputException on bps of type 'N'
+		case 78:
 			rc->append(1,78);
 			break;
 		default:
@@ -335,6 +335,29 @@ void Util::revCompDig(string * s, string * rc) {
 	 }
 	 }
 	 */
+}
+
+std::string Util::oneDigitToNuc(const std::string &input)
+{
+  std::string result = "";
+  for (int i = 0; i < input.size(); i++)
+  {
+    if(input.at(i) == '\0'){
+    	result.append(1,'A');
+    } else if(input.at(i) == '\1'){
+      	result.append(1, 'C');
+    } else if(input.at(i) == '\2'){
+      	result.append(1, 'G');
+    } else if(input.at(i) == '\3'){
+      	result.append(1, 'T');
+    } else if(input.at(i) == 78){
+      	result.append(1, 'N');
+	} else {
+      	std::cerr << "This is an unrecognized character (" << int(input.at(i)) << ")!" << std::endl;
+      	throw std::exception();
+    }
+  }
+  return result;
 }
 
 void Util::writeFasta(const string& sequence, const string& header,

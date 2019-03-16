@@ -33,12 +33,13 @@ private:
 	int ltrSep;
 	int tsdW;
 	int tsdT;
-	int tailW;
-	int tailT;
+	// int tailW;
 	int min;
 	int max;
 	int maxLtrLen;
 	int minLtrLen;
+
+	const int tailT = 12;
 
 	bool canUseLtr;
 	bool canUseSine;
@@ -58,8 +59,11 @@ private:
 	void filterAcc2Length();
 	void filterAcc2DNA();
 
+	int calculateTailWindow(double,int,int);
+	void removeOverlaps();
+
 public:
-	FilterTr(string,const string *, vector<BackwardTr *> *, int,string,int,int,int,int,int);
+	FilterTr(string,const string *, vector<BackwardTr *> *, int,int,int,int,int,int);
 	virtual ~FilterTr();
 	vector<LtrTe *> * getTeList();
 	bool orderFunction(BackwardTr *, BackwardTr *);

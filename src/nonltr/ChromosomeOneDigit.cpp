@@ -32,26 +32,32 @@ namespace nonltr {
 
 ChromosomeOneDigit::ChromosomeOneDigit() :
 		Chromosome() {
-			
 }
 
 ChromosomeOneDigit::ChromosomeOneDigit(string fileName) :
 		Chromosome(fileName) {
-			
-			
 	help();
-	
 }
 
-ChromosomeOneDigit::ChromosomeOneDigit(string seq, string info) :
+ChromosomeOneDigit::ChromosomeOneDigit(string fileName, int segmentLength,
+		int maxLength) :
+		Chromosome(fileName, segmentLength, maxLength) {
+	help();
+}
+
+ChromosomeOneDigit::ChromosomeOneDigit(string& seq, string& info) :
 		Chromosome(seq, info) {
+	help();
+}
+
+ChromosomeOneDigit::ChromosomeOneDigit(string& seq, string& info, int length) :
+		Chromosome(seq, info, length) {
 	help();
 }
 
 void ChromosomeOneDigit::help() {
 	// Build codes
 	buildCodes();
-	
 	// Modify the sequence in the super class
 	encodeNucleotides();
 }
@@ -62,6 +68,9 @@ void ChromosomeOneDigit::finalize() {
 }
 
 void ChromosomeOneDigit::buildCodes() {
+	// Can delete the codes
+	canClean = true;
+
 	// Make map
 	codes = new map<char, char>();
 
@@ -90,86 +99,72 @@ void ChromosomeOneDigit::buildCodes() {
 }
 
 ChromosomeOneDigit::~ChromosomeOneDigit() {
-	codes->clear();
-	delete codes;
+	if (canClean) {
+		codes->clear();
+		delete codes;
+	}
 }
 
 /**
  * This method converts nucleotides in the segments to single digit codes
  */
 void ChromosomeOneDigit::encodeNucleotides() {
- 
-  for (int s = 0; s < segment->size(); s++) {
-    int segStart = segment->at(s)->at(0);
-    int segEnd = segment->at(s)->at(1);
-    for (int i = segStart; i <= segEnd; i++) {
-      if (codes->count(base[i]) > 0) {
-	base[i] = codes->at(base[i]);
-      } else {
-	string msg = "Invalid nucleotide: ";
-	msg.append(1, base[i]);
-	throw InvalidInputException(msg);
-      }
-    }
-  }
 
-  // Digitize skipped segments
-  int segNum = segment->size();
-  if(segNum > 0){
-    // The first interval - before the first segment
-    int segStart = 0; 
-    int segEnd = segment->at(0)->at(0)-1; 
+	for (int s = 0; s < segment->size(); s++) {
+		int segStart = segment->at(s)->at(0);
+		int segEnd = segment->at(s)->at(1);
+		for (int i = segStart; i <= segEnd; i++) {
 
-    for (int s = 0; s <= segNum; s++) {      
-      for (int i = segStart; i <= segEnd; i++) {
-	char c = base[i];
-	if(c != 'N'){
-	  if (codes->count(c) > 0) {
-	    base[i] = codes->at(c);
-	  } else {
-	    string msg = "Invalid nucleotide: ";
-	    msg.append(1, c);
-	    throw InvalidInputException(msg);
-	  }
-	}
-      }
-
-      // The regular intervals between two segments
-      if(s < segNum-1){
-	segStart = segment->at(s)->at(1)+1;
-	segEnd = segment->at(s+1)->at(0)-1;
-      }
-      // The last interval - after the last segment
-      else if(s == segNum - 1){
-	segStart = segment->at(s)->at(1)+1;
-	segEnd = base.size()-1;
-      } 
-    } 
-  }
-}
-
-/*
-void ChromosomeOneDigit::encodeNucleotides() {
-	int seqLen = base.size();
-
-	for (int i = 0; i < seqLen; i++) {
-		if (codes->count(base[i]) > 0) {
-			base[i] = codes->at(base[i]);
-		} else {
-			string msg = "Invalid nucleotide: ";
-			msg.append(1, base[i]);
-			throw InvalidInputException(msg);
+			if (codes->count(base[i]) > 0) {
+				base[i] = codes->at(base[i]);
+			} else {
+				string msg = "Invalid nucleotide: ";
+				msg.append(1, base[i]);
+				throw InvalidInputException(msg);
+			}
 		}
 	}
 
+	// Digitize skipped segments
+	int segNum = segment->size();
+	if (segNum > 0) {
+		// The first interval - before the first segment
+		int segStart = 0;
+		int segEnd = segment->at(0)->at(0) - 1;
+
+		for (int s = 0; s <= segNum; s++) {
+			for (int i = segStart; i <= segEnd; i++) {
+				char c = base[i];
+
+				if (c != 'N') {
+					if (codes->count(c) > 0) {
+						base[i] = codes->at(c);
+					} else {
+						string msg = "Invalid nucleotide: ";
+						msg.append(1, c);
+						throw InvalidInputException(msg);
+					}
+				}
+			}
+
+			// The regular intervals between two segments
+			if (s < segNum - 1) {
+				segStart = segment->at(s)->at(1) + 1;
+				segEnd = segment->at(s + 1)->at(0) - 1;
+			}
+			// The last interval - after the last segment
+			else if (s == segNum - 1) {
+				segStart = segment->at(s)->at(1) + 1;
+				segEnd = base.size() - 1;
+			}
+		}
+	}
 }
-*/
 
 /**
  * Cannot be called on already finalized object.
  */
 void ChromosomeOneDigit::makeR() {
-	//cout << "Making reverse ..." << endl;
 	makeReverse();
 	reverseSegments();
 }
@@ -178,7 +173,6 @@ void ChromosomeOneDigit::makeR() {
  * Cannot be called on already finalized object.
  */
 void ChromosomeOneDigit::makeRC() {
-	//cout << "Making reverse complement ..." << endl;
 	makeComplement();
 	makeReverse();
 	reverseSegments();
@@ -195,7 +189,6 @@ void ChromosomeOneDigit::makeComplement() {
 
 	// Unknown nucleotide
 	complement.insert(map<char, char>::value_type('N', 'N'));
-	// complement.insert(map<char, char>::value_type((char) 4, (char) 4));
 
 	// Convert a sequence to its complement
 	int seqLen = base.size();

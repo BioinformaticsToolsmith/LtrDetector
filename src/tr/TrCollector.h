@@ -32,18 +32,30 @@ private:
 	std::string csvFileName;
 	std::string bedFileName;
 	std::string name;
-	vector<LtrTe *> * teList;
+	// vector<LtrTe *> * teList; /*HZG commented out this file*/
+	bool bedFormat;
+	bool printRaw;
+	bool printClean;
+	bool displayNested;
 
-
+	// A list of regular (very likely not nested) TE
+	vector<LtrTe*> * teList;
+	// A list of nested TE
+	vector<LtrTe*> * nestedTeList;
 
 	void collect();
+	void findNested();
+	int findNestedHelper1(int, int, int);
+	void findNestedHelper2(int, int, int, int);
+	void scoresFormat(vector<int>*,string,string);
 
 public:
-	TrCollector(std::string,std::string,std::string, int, int,int,int,int,int,int,int);
+	TrCollector(ChromosomeOneDigit * /*HZG changed this parameter*/,std::string,std::string, int, int,int,int,int,int,int,int,bool,bool,bool,bool);
 	virtual ~TrCollector();
-	vector<LtrTe *> * getTeList();
-	void printIndex(string);
-	void printMasked(string);
+	// vector<LtrTe *> * getTeList();
+	void printIndex(string, vector<LtrTe *> * );
+	void printMasked(string, vector<LtrTe *> *);
+	void outputAnnotation(vector<LtrTe *> *,string);
 
 };
 

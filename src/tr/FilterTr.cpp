@@ -2,14 +2,14 @@
  * FilterTr.cpp
  * 
  *  Created on: Dec 14, 2012
- *      Author: Hani Zakaria Girgis, PhD
+ *      Author: Hani Zakaria Girgis, PhD and Joseph Valencia
  */
 
-// Delete start
+
 #include <iostream>
 #include <string>
 #include <algorithm>
-// Delete end
+#include <cmath>
 
 #include "FilterTr.h"
 #include "TrKVisitor.h"
@@ -32,8 +32,7 @@ using namespace exception;
 
 namespace tr {
 
-FilterTr::FilterTr(string nameIn,const string* seqIn, vector<BackwardTr*>* bListIn, int kIn, string bedFileNameIn, int ltrIdIn, int minIn, int maxIn, int minLtrLenIn,int maxLtrLenIn) {
-
+FilterTr::FilterTr(string nameIn,const string* seqIn, vector<BackwardTr*>* bListIn, int kIn, int ltrIdIn, int minIn, int maxIn, int minLtrLenIn,int maxLtrLenIn) {
 	seq = seqIn;
 	cSeq = seq->c_str();
 	bList = bListIn;
@@ -42,27 +41,31 @@ FilterTr::FilterTr(string nameIn,const string* seqIn, vector<BackwardTr*>* bList
 	teList = new vector<LtrTe *>();
 	canUseLtr = false;
 	canUseLength = true;
-	canUseSine = false; //changed
+	canUseSine = false;
 	canUseDNA = true;
-	canUsePpt = false;
-	canUseTsd = false;//changed
-	bedFileName = bedFileNameIn;
+	canUsePpt = true;
+	canUseTsd = true;
 
 	init = (int) 'N';
 	ltrId = ltrIdIn;
    
-	tsdW = 100;
+	tsdW = 20;
 	tsdT = 4;
 
-	tailW = 500;
-	tailT = 12; //10
 	min = minIn;
 	max = maxIn;
 	minLtrLen = minLtrLenIn;
 	maxLtrLen = maxLtrLenIn;
+
     tightenBounds();
 	//adjust();
 	filter();
+	removeOverlaps();
+
+	// Sort detections according to the start site
+	if(teList->size() > 1){
+		sort(teList->begin(), teList->end(), LtrTe::lessThan);
+	}
 }
 
 
@@ -72,12 +75,44 @@ FilterTr::~FilterTr() {
 	delete teList;
 }
 
+void FilterTr::removeOverlaps(){
+
+
+	if(teList->size() > 0){
+
+		LtrTe * curr = teList->at(0);				
+
+		for(int i = 1; i<teList->size(); i++){
+			int currStart = curr->getStart();
+			int currEnd = curr->getEnd();
+
+			LtrTe * next = teList->at(i);
+			int nextStart = next->getStart();
+			int nextEnd = next->getEnd();
+
+			if (currEnd >= nextStart && currEnd <= nextEnd){
+
+				curr->setDeleted(true);
+			}
+			else{
+				curr = next;
+			}
+		}
+
+		teList->erase(std::remove_if(teList->begin(), teList->end(), [](LtrTe * x){return x->getDeleted();}), teList->end());
+
+	}
+}
+
 void FilterTr::tightenBounds()
-{   //cout<<"Tightening bounds"<<endl;
+{   
 
 	int chromLen = seq->length();
 
 	vector<BackwardTr*> * newList = new vector<BackwardTr*>();
+
+	int total = bList->size();
+	int kept = 0;
 
 	for (int i=0;i<bList->size();i++)
 	{
@@ -87,22 +122,43 @@ void FilterTr::tightenBounds()
 		int e1 = ltr->getE1();
 		int upLen = e1+k-s1;
 
+		
 		int s2 = ltr->getS2();
 		int e2 = ltr->getE2();
 		int downLen = e2+k-s2;
 
 		int midpoint = e1+((s2-e1)/2);
-		//cout <<"midpoint= "<<midpoint<<endl;
 
-		//cout << "Before adjustment" << endl;
-		//cout << "S1->" << s1 << " E1->" << e1 << " S2->" << s2 << " E2->" << e2 << endl;
+ 
+		float factor = 1.5;
 
-		int upDiff = maxLtrLen - upLen;
-		int downDiff = maxLtrLen - downLen;
+		int smallerLen = std::min(upLen,downLen);
+		int largerLen = std::max(upLen,downLen);
+
+		int largerDiff = ceil(factor*largerLen);
+		int largerTotal = largerLen+2*largerDiff;
+
+		int smallerDiff = (largerTotal - smallerLen)/2;
 		
-		
-		upDiff = upDiff < 0 ? 0 : upDiff;
-		downDiff = downDiff < 0 ? 0: downDiff;
+		int upDiff;
+		int downDiff;
+
+		if(smallerLen == upLen){
+
+			upDiff = smallerDiff;
+			downDiff = largerDiff;
+		}
+
+		else if(smallerLen = downLen){
+			downDiff = smallerDiff;
+			upDiff = smallerDiff;
+		}
+
+		int upTotal = upLen+2*upDiff;
+		int downTotal = downLen+2*downDiff;
+	
+		upDiff = upTotal > maxLtrLen ? (maxLtrLen - upLen)/2 : upDiff;
+		downDiff = downTotal > maxLtrLen ? (maxLtrLen-downLen)/2 : downDiff;
 
 		int upStart = s1 - upDiff;
 		int upEnd = upStart + upLen + 2 *upDiff + k;
@@ -111,45 +167,44 @@ void FilterTr::tightenBounds()
 		int downEnd = downStart + downLen + 2*downDiff + k;
 
 		if (upStart >=0 && upEnd <chromLen && downStart >= 0 && downEnd<chromLen){
-
-			//cout << "updiff=" << upDiff << endl;
-			//cout << "downDiff=" << downDiff << endl;
-			//cout << "upslice=" << upStart << ":" << upEnd << endl;
-
 			upLen = upEnd > midpoint ? midpoint - upStart : upEnd-upStart; // Does alignment window encroach on midpoint between LTRs?
 
-			//cout << "upslice=" << upStart << ":" << upStart+upLen<< endl;
 
 			string upstream = seq->substr(upStart, upLen);
-			//cout<<convertNucleotides(upstream)<<endl;
+
 
 			downStart = downStart < midpoint ? midpoint : downStart;
 
-			//cout << "downslice=" << downStart << ":" << downEnd<< endl;
+
 
 			string downstream = seq->substr(downStart, downEnd-downStart);
-			//cout<<convertNucleotides(downstream)<<endl;
 
+
+	
 			LocAlign *local = new LocAlign(upstream.c_str(), 0, upstream.length(), downstream.c_str(), 0, downstream.length(), 2, -3, 5, 2);
-			//  cout<<"top "<<local->getQueryStart()<<":"<<local->getQueryEnd()<<endl;
+	
 			int newS1 = upStart + local->getQueryStart();
 			int newE1 = upStart + local->getQueryEnd();
-			//cout<<"bottom "<<local->getReferenceStart()<<":"<<local->getReferenceEnd()<<endl;
+
 			int newS2 = downStart + local->getReferenceStart();
 			int newE2 = downStart + local->getReferenceEnd();
 
-			//cout<<"After adjustment"<<endl;
-			//cout<<"S1->"<<newS1<<"E1->"<<newE1<<" S2->"<<newS2<<" E2->"<<newE2<<endl;
 			double id = local->getIdentity() * 100;
-			//cout<<"ID="<<id<<endl;
+
 			BackwardTr *updated = new BackwardTr(newS1, newE1, newS2, newE2);
 
 			if (id >= ltrId)
-			{
+			{  
+				updated->setIdentity(id);
+				kept++;
 				newList->push_back(updated);
 			}
 
-			//bList->at(i) = new BackwardTr(newS1,newE1,newS2,newE2);
+			else{
+				//cout<<"Removing "<<updated->toString()<<" with %id: "<<id<<endl;
+			}
+
+
 
 			bool overlaps = true;
 
@@ -165,13 +220,10 @@ void FilterTr::tightenBounds()
 
 				if (nextStart > updated->getE1())
 				{
-					//cout<<"no overlap"<<endl;
 					overlaps = false;
-					i = j - 1;
 				}
-				else
+				else    
 				{
-					//cout<<"overlaps"<<endl;
 					j += 1;
 				}
 			}
@@ -182,12 +234,8 @@ void FilterTr::tightenBounds()
 
 	//Removing duplicates
     std::sort( newList->begin(),newList->end(),[](BackwardTr * first, BackwardTr * second){ return first->getS1() < second->getS1();});
-	//cout << "BLIST_SIZE === " << bList->size() << endl;
-
 	Util::deleteInVector(bList);
-	//bList->clear();
 
-	
 	for( int i = 0; i<(int)newList->size()-1;i++){
 
 		BackwardTr * first = newList->at(i);
@@ -204,19 +252,10 @@ void FilterTr::tightenBounds()
 
 		}
 		
-		//cout<<"pushing back first"<<first->toString()<<endl;
 		bList->push_back(first);
-		//cout<<"pushing back second"<<second->toString()<<endl;
 		bList->push_back(second);
 		i = j;
-
-
 	}
-
-	//cout<<"BLIST_SIZE === "<<bList->size()<<endl;
-	//bList = newList;
-
-	//cout << "BLIST_SIZE === " << bList->size() << endl;
 
 	delete newList;
 	
@@ -229,53 +268,43 @@ void FilterTr::adjust() {
 	TrKVisitor * kVisitor = new TrKVisitor(k, seqEnd); 
 	int size = bList->size();
 	for (int i = 0; i < size; i++) {
-		//cout << bList->at(i)->toString()<<endl;
 		bList->at(i)->accept(kVisitor); //adds k to index of each end TR
-		//cout << bList->at(i)->toString()<<endl;
 	}
 }
 
 
 void FilterTr::filter() {
 	if (canUseLtr) {
-		//cout<<"Entering alignment filter"<<endl;
 		filterAcc2Ltr();
 	} else {
 		fillTeList();
-		//cout<<"I shouldn't see this"<<endl;
 	}
-   // cerr<<"Past LTR"<<endl;
 	if (canUseSine) {
 		filterAcc2Sine();
 	}
 	
 	if(canUseLength)
 	{
-	
 		filterAcc2Length();
 	}
-	//cerr << "Past Length" << endl;
 
 	if (canUseDNA)
 	{
 		filterAcc2DNA();
 	}
-//	cerr << "Past DNA" << endl;
 
 	if (canUsePpt)
 	{
 		filterAcc2Ppt();
 	}
-    //cerr<<"Past Ppt"<<endl;
+
 	if (canUseTsd) {
 		filterAcc2Tsd();
 	}
-	//cerr<<"Past Tsd"<<endl;
 }
 
 void FilterTr::fillTeList() {
 
-	//cout<<"inside fillTeList"<<endl;
 	if (teList->size() != 0)
 	{ 
 			string msg("The TE list must be empty. The current size is: ");
@@ -285,12 +314,12 @@ void FilterTr::fillTeList() {
 	}
 
 	int size = bList->size();
-	//cout<<"SIZE IS :"<<size<<endl;
+
 	for (int i = 0; i < size; i++) {
 		teList->push_back(
 				new LtrTe(bList->at(i), EmptyTSD::getInstance(),
 						EmptyTail::getInstance()));
-	}//cout<<"leaving fillTeList"<<endl;
+	}
 }
 
 void FilterTr::filterAcc2Ltr() {
@@ -310,8 +339,6 @@ void FilterTr::filterAcc2Ltr() {
 		int e1 = ltr->getE1();
 		int s2 = ltr->getS2();
 		int e2 = ltr->getE2();
-		//cout<<"S1="<<s1<<" e2="<<e2<<endl;
-		
 
 		if (!Util::isOverlapping(s1, e1, s2, e2)) {
 
@@ -324,16 +351,13 @@ void FilterTr::filterAcc2Ltr() {
 				ltr->accept(v);
 
 				if (v->getIsGood()) {
-					//cout <<"kept"<<endl;
-					//cout << ltr->toString() << endl;
 					teList->push_back(
 							new LtrTe(ltr, EmptyTSD::getInstance(),
 									EmptyTail::getInstance()));
 
 				}
 				else{
-					//cout<<"Not kept:"<<endl;
-					//cout << ltr->toString() << endl;
+
 				}
 				
 				delete v;
@@ -341,13 +365,14 @@ void FilterTr::filterAcc2Ltr() {
 		}
 		
 	}
-	//cout << "TElist size=" << teList->size() << endl;
 }
 
 void FilterTr::filterAcc2Length(){
 
 	vector<LtrTe *> *temp = new vector<LtrTe *>();
 	int size = teList->size();
+	int total =size;
+	int kept = 0;
 
 	for (int i = 0; i < size; i++)
 	{
@@ -360,29 +385,26 @@ void FilterTr::filterAcc2Length(){
 
 		int total = ltr->getE2()-ltr->getS1();
 		
-		bool upFits = upLen >= minLtrLen && upLen <=2* maxLtrLen;
-		bool downFits = downLen >= minLtrLen && downLen <=2* maxLtrLen;
+		bool upFits = upLen >= minLtrLen && upLen <= maxLtrLen;
+		bool downFits = downLen >= minLtrLen && downLen <= maxLtrLen;
 		bool totalFits = total >= min && total <= max;
 
+
 		if(upFits && downFits && totalFits){
-			//cout << "Keeping LTR " << ltr->getS1() << " "<< ltr->getE2() << " length=" << total << endl;
 			LtrTe * longEnough = new LtrTe(*te);
+			kept++;
 			temp->push_back(longEnough);
 		}
 		else{
-			//cout<<"Deleting LTR "<<ltr->getS1()<<" "<<ltr->getE2()<<" length="<<total<<endl;
-		
+
+		}
 	}
 
-
-}
 	Util::deleteInVector(teList);
 	teList->clear();
 	teList = temp;
-	
-	
 }
-// gets rid of 
+
 void FilterTr::filterAcc2Sine() {
 	vector<LtrTe *> * temp = new vector<LtrTe *>();
 	int size = teList->size();
@@ -391,9 +413,7 @@ void FilterTr::filterAcc2Sine() {
 		LtrTe * te = teList->at(i);
 		
 		BackwardTr * ltr = te->getLtr();
-        //cout<<ltr->toString()<<endl;
-		//cout << "==========================================================================" << endl;
-		TrSineVisitor * sineV = new TrSineVisitor(seq, tailT, 100, tsdT);
+		TrSineVisitor * sineV = new TrSineVisitor(seq, 8, 100, tsdT);
 		ltr->accept(sineV);
 		bool isTwoSines = sineV->isTwoSines();
 		delete sineV;
@@ -408,68 +428,103 @@ void FilterTr::filterAcc2Sine() {
 	teList->clear();
 	teList = temp;
 }
-// Filters according to target side duplication
+
+
 void FilterTr::filterAcc2Tsd() {
 	vector<LtrTe *> * temp = new vector<LtrTe *>();
-	int size = teList->size();
 
+	int size = teList->size();
 	for (int i = 0; i < size; i++) {
-		LtrTe * te = teList->at(i);
-		
+		LtrTe * te = teList->at(i);	
 		BackwardTr * ltr = te->getLtr();
 		TSD * tsd = new TSD(seq, ltr, tsdW, init);
+
 		if (tsd->getTsdSize() > tsdT) {
 			LtrTe * teWithTsd = new LtrTe(*te);
 			teWithTsd->setTsd(tsd);
-			temp->push_back(teWithTsd);
+			temp->push_back(teWithTsd);		
+		}
+		else{
+			te->setTsd(EmptyTSD::getInstance() );
+			temp->push_back(new LtrTe(*te));
 		}
 		delete tsd;
-
 	}
 
 	Util::deleteInVector(teList);
 	teList->clear();
 	teList = temp;
 }
-// Filter according to polypurine tail. Existence of ppt proves it is ltr
-void FilterTr::filterAcc2Ppt() {
 
+// calculate search window based on minimum and size of interior
+int FilterTr::calculateTailWindow(double ratio, int lengthElement, int minimum){	
+	int limit = lengthElement > minimum ? minimum : lengthElement;
+	int scaled = ceil(ratio*lengthElement);
+	return scaled > limit ? scaled : limit;
+}
+
+void FilterTr::filterAcc2Ppt() {
 	vector<LtrTe *> * temp = new vector<LtrTe *>();
 	int size = teList->size();
 
 	for (int i = 0; i < size; i++) {
+
 		LtrTe * te = teList->at(i);
 		BackwardTr * ltr = te->getLtr();
-		Location *location = new Location(ltr->getS1(), ltr->getE2());
 
-		TailFinder * finder = new TailFinder(seq, location, TailFinder::MARK_P,
-				tailW, tailT);		
-		vector<int> * tailVec = finder->getTail();
-		if (tailVec->size() == 4) {
-			string strand;
-			int strandInt = tailVec->at(3);
-			if (strandInt == 1) {
-				strand = "+";
-			} else if (strandInt == -1) {
-				strand = "-";
-			} else {
-				string msg("Invalid strand. ");
-				msg.append("Valid strands are 1 and -1, but received: ");
-				msg.append(Util::int2string(strandInt));
-				msg.append(".");
-				cerr <<"About to throw!!!!"<<endl;
-				throw InvalidInputException(msg);
+		// int minInterior = 50; /*HZG commented out this line*/
+		int minWindow = 100; /*HZG moved this line from the if statement below and changed the condition*/
+		int interiorLen = ltr->getS2()-ltr->getE1();
+		// HZG: Think about this condition
+		if(interiorLen >= minWindow){
+
+			Location * location = new Location(ltr->getE1()+1,ltr->getS2()-1);
+
+			int interiorLen = location->getLength();
+			double ratio = 0.05;
+
+			int window = calculateTailWindow(ratio,interiorLen,minWindow);
+
+			int seedLen = 5;
+			int gapLen = 3;
+
+			TailFinder * finder = new TailFinder(seq, location, TailFinder::MARK_P,seedLen,gapLen, window, tailT);		
+			vector<int> * tailVec = finder->getTail();
+
+			if (tailVec->size() == 4) {
+				string strand;
+				int strandInt = tailVec->at(3);
+				if (strandInt == 1) {
+					strand = "+";
+				} else if (strandInt == -1) {
+					strand = "-";
+				} else {
+					string msg("Invalid strand. ");
+					msg.append("Valid strands are 1 and -1, but received: ");
+					msg.append(Util::int2string(strandInt));
+					msg.append(".");
+					cerr <<"About to throw!!!!"<<endl;
+					throw InvalidInputException(msg);
+				}
+				Tail * tail = new Tail(tailVec->at(0), tailVec->at(1), strand, tailVec->at(2));
+				LtrTe * teWithTail = new LtrTe(*te);
+				teWithTail->setPpt(tail);
+				
+				delete tail;
+				temp->push_back(teWithTail);
+
 			}
-			Tail * tail = new Tail(tailVec->at(0), tailVec->at(1), strand,
-					tailVec->at(2));
-			LtrTe * teWithTail = new LtrTe(*te);
-			teWithTail->setPpt(tail);
-			delete tail;
-			temp->push_back(teWithTail);
-		}
+			else{
+				te->setPpt( EmptyTail::getInstance());
+				temp->push_back(new LtrTe(*te));
+			}
 
 			delete finder;
-		delete location;
+			delete location;
+		}else{
+			te->setPpt( EmptyTail::getInstance());
+			temp->push_back(new LtrTe(*te));
+		}
 	}
 
 	Util::deleteInVector(teList);
@@ -479,18 +534,20 @@ void FilterTr::filterAcc2Ppt() {
 
 void FilterTr::filterAcc2DNA(){
 
-	//cout<<"Inside DNA filter"<<endl;
-
 	vector<LtrTe *> *filtered = new vector<LtrTe *>();
 
 	int size = teList->size();
+	
+	int total = size;
+	int kept = 0;
+
+	int minDNASize = 1000;
 
 	for (int i = 0; i < size; i++)
 	{
 
 		LtrTe *te = teList->at(i);
 		BackwardTr *ltr = te->getLtr();
-		//cout<<"Processing"<<ltr->toString()<<endl;
 
 		//Is there a TIR in the left detection
 
@@ -499,94 +556,78 @@ void FilterTr::filterAcc2DNA(){
 
 		int len1 = e1-s1;
 
-		//cout<<"OG size="<<len1<<endl;
-
-		len1 = len1 < minLtrLen ? len1/2 : minLtrLen/2;
-
-		string deleteThis = seq->substr(s1,len1);
-
-		//out<<convertNucleotides(deleteThis)<<endl;
-
-		const char * leftFirst = deleteThis.c_str();
-
-		//cout<<"leftFirst size ="<<seq->substr(s1,len1).length()<<endl;
-
-		//cout<<"one"<<endl;
-      
-		string * temp = new string();
-		
-		
-		Util::revCompDig(cSeq,e1-len1,e1,temp);
-
-		//cout << "rightFirst size="<<temp->length() << endl;
-
-		//cout<<"two"<<endl;
-
-		//cout <<convertNucleotides(*temp)<<endl;
-
-		const char * rightFirstRC = temp->c_str();
-		//cout<<"three"<<endl;
-
-       // cout<<"leftFirst length ="<<deleteThis.length()-1<<endl;
-		//cout <<"rightFirstRC length ="<<temp->length()-1<<endl;
-
-		 LocAlign *firstAlign = new LocAlign(leftFirst, 0, deleteThis.length()- 1, rightFirstRC, 0, temp->length() - 1, 2, -3, 5, 2);
-		//cout<<"3.5"<<endl;
-
-		bool leftTIR = firstAlign->getLength() >= 15;
-		//cout<<"Alignment length ="<<firstAlign->getLength()<<endl;
-		
-		//cout << "four" << endl;
-
-		//Is there a TIR in the right detection
-
 		int s2 = ltr->getS2();
 		int e2 = ltr->getE2();
 
 		int len2 = e2-s2;
 
 
-		len2 = len2 < minLtrLen ? len2 / 2 : minLtrLen / 2;
+
+		if(len2<minDNASize && len1 <minDNASize){
+
+		int TIRwindow =30 ;
+
+		len1 = len1< 2*TIRwindow ? len1/2: TIRwindow;
+
+		string deleteThis = seq->substr(s1,len1);
+
+
+
+		const char * leftFirst = deleteThis.c_str();
+
+      
+		string * temp = new string();
+		
+		
+		Util::revCompDig(cSeq,e1-len1,e1,temp);
+
+		const char * rightFirstRC = temp->c_str();
+
+		LocAlign *firstAlign = new LocAlign(leftFirst, 0, deleteThis.length()- 1, rightFirstRC, 0, temp->length() - 1, 2, -3, 5, 2);
+
+		int minAlignLen = 15;
+
+		float minId = 0.80;
+
+		float id1 = firstAlign->getIdentity();
+		
+
+		bool leftTIR = firstAlign->getLength() >= minAlignLen;
+
+		len2 = len2 < 2*TIRwindow ? len2/2 : TIRwindow;
 
 		string deleteThis2 = seq->substr(s2,len2);
 
-		//cout<<convertNucleotides(deleteThis2)<<endl;
-
 		const char *leftSecond = deleteThis2.c_str();
-
-		//cout << "five" << endl;
 
 		string * temp2 = new string();
 
 		Util::revCompDig(cSeq, e2 - len2, e2, temp2);
 
-		//cout << "six" << endl;
-
-		//cout<<convertNucleotides(*temp2)<<endl;
-
 		const char *rightSecondRC = temp2->c_str();
 
 		LocAlign * secondAlign = new LocAlign(leftSecond, 0, deleteThis2.length()-1, rightSecondRC, 0, temp2->length()-1, 2, -3, 5, 2);
 
-		//cout << "seven" << endl;
+		float id2 = secondAlign->getIdentity();
 
-		bool rightTIR = secondAlign->getLength() >= 15;
-		//cout <<secondAlign->getLength()<<endl;
+		bool rightTIR = secondAlign->getLength() >= minAlignLen;
 
 		bool twoDNATransposons = leftTIR && rightTIR;
 
         if(!twoDNATransposons){
-
 			LtrTe * notDNA = new LtrTe(ltr,EmptyTSD::getInstance(),EmptyTail::getInstance());
-
-				filtered->push_back(notDNA);
+			kept++;
+			filtered->push_back(notDNA);
 		}
 		else{
 
-			//cout<<ltr->toString()<<"  consists of two adjacent DNA transposons"<<endl;
+		}
 		}
 
-
+		else{
+			LtrTe * notDNA = new LtrTe(ltr,EmptyTSD::getInstance(),EmptyTail::getInstance());
+			filtered->push_back(notDNA);
+		}
 	}
 
 		Util::deleteInVector(teList);
@@ -598,33 +639,7 @@ vector<LtrTe *> * FilterTr::getTeList() {
 	return teList;
 }
 
-void FilterTr::bedFormat(int start, int end)
-{
-	cout << bedFileName << endl;
-	ofstream output;
-	output.open(bedFileName);
-	int size = teList->size();
 
-	//cout<<"FINAL TE SIZE ="<<size<<endl;
-
-	for (int i = 0; i < size; i++)
-	{
-		LtrTe *curr = teList->at(i);
-		BackwardTr* ltr = curr->getLtr();
-
-		//cout<<ltr->toString()<<endl;
-
-		//cout << name << "\t" << ltr->getS1() << '\t' << ltr->getE2() << "\t" << ltr->getS1() << '\t' << ltr->getE1() << "\t" << ltr->getS2() << '\t' << ltr->getE2() << endl;
-
-		output << name
-			   << "\t" << ltr->getS1() << '\t' << ltr->getE2() << "\t" << ltr->getS1() << '\t' << ltr->getE1()<<"\t"<<ltr->getS2()<< '\t' << ltr->getE2() << endl;
-		//output<<convertNucleotides(upstream)<<endl;
-		//output<<convertNucleotides(downstream)<<endl;
-
-		
-	}
-	output.close();
-}
 
 string FilterTr::convertNucleotides(string str){
     string ans ="";
@@ -661,7 +676,6 @@ string FilterTr::convertNucleotides(string str){
 }
 void FilterTr::fullFormat(int start, int end)
 {   
-	cout << bedFileName << endl;
 	ofstream output;
 	output.open(bedFileName);
 
@@ -692,27 +706,27 @@ void FilterTr::fullFormat(int start, int end)
 
         //expand downstream
 		for (int i =0;i<bound;i+=step){
-           // cout<<"expanding downstream!"<<endl;
+
             GlobAlignE * extension = new GlobAlignE(cSeq,e1,e1+step-1,cSeq,e2,e2+step-1,1,-1,5,2);
 			int extensionId = extension->getIdentity() *100;
 
 			if(abs(id-extensionId)>=10){
 				e2+=step-1;
 				e1+=step-1;
-				cout << "chrX" << "	" << s1 << " " << e2 << endl;
+
 				break;
 			}
 
 			else if (abs(id - extensionId) >= 10)
 			{
-				cout << "chrX" << "	" << s1 << " " << e2 << endl;
+	
 				break;
 			}
 		}
         //expand upstream
 		for (int i = 0; i < bound; i += step)
 		{
-            cout<<"expanding upstream"<<endl;
+            // cout<<"expanding upstream"<<endl;
 			GlobAlignE *extension = new GlobAlignE(cSeq, s1-step, s1, cSeq, s2-step, s2, 2, -3, 4, 1);
 			int extensionId = extension->getIdentity() * 100;
 
@@ -720,13 +734,11 @@ void FilterTr::fullFormat(int start, int end)
 			{
 				s2 -=  step - 1;
 				s1 -=  step - 1;
-				cout << "chrX"<< "	" << s1 << " " << e2 << endl;
 				break;
 			}
 
 			else if (abs(id - extensionId) >= 10)
 			{
-				cout << "chrX"<< " " << s1 << " " << e2 << endl;
 				break;
 			}
 			
@@ -737,7 +749,7 @@ void FilterTr::fullFormat(int start, int end)
 
 		if (e2 - s1 > minLtrLen)
 		{
-			output << "chrX" << "\t" << s1 << "\t" << e2<< endl;
+			// HZG: Does this condition need to be here?
 		}
 	}
 	output.close();

@@ -26,6 +26,7 @@ private:
 public:
 	Tail(int, int, string, double);
 	Tail(ITail&);
+	Tail(ITail&,int);
 	virtual ~Tail();
 
 	// Inherited from ILocation

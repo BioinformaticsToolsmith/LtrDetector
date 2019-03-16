@@ -29,6 +29,7 @@ public:
 	virtual ~TrSineVisitor();
 	virtual void visit(Tr *);
 	bool isTwoSines();
+	int calculateTailWindow(double,int,int);
 };
 
 } /* namespace tr */

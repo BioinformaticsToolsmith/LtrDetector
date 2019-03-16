@@ -19,16 +19,17 @@ using namespace std;
 using namespace exception;
 
 namespace utility {
-TailFinder::TailFinder(const string * seqIn, ILocation * locIn, int whichTailIn,
+TailFinder::TailFinder(const string * seqIn, ILocation * locIn, int whichTailIn, int seedSize,int gapSize,
 		int winIn, int minLenIn) {
 	seq = seqIn;
 	loc = locIn;
 	whichTail = whichTailIn;
+    // This window is at the end of the region of interest
+
+	seedLen = seedSize;
+	gapLen = gapSize;
 	win = winIn;
 	minLen = minLenIn;
-
-	seedLen = 2;
-	gapLen = 4;
 
 	findMark();
 }
@@ -41,36 +42,39 @@ TailFinder::~TailFinder() {
 
 void TailFinder::findMark() {
 
-	int start = loc->getStart();
-	
-	int end = loc->getEnd();
+	int start = loc->getStart();	
+	int end   = loc->getEnd();
+	int len   = loc->getLength();
 
-	int len = loc->getLength();
+	string * detection = new string(seq->begin() + start, seq->begin()+end+1);
 
-	string * detection = new string(seq->begin() + start,
-			seq->begin() + end + 1);
+	//cout<<"detection->size() ="<<detection->size()<<endl;
 
-	int halfEnd = detection->size() / 2;
+	//int searchEnd = detection->size() / 2;
+	//searchEnd = (searchEnd > win) ? win : searchEnd;
 
-	halfEnd = (halfEnd > win) ? win : halfEnd;
+	// int searchEnd = win;
 
 	vector<int> * pstvTail = new vector<int>(); //stores info on positive tail
-
-    cout<<"Repeat:"<<endl;
-	// Test start
+    // cout<<"Repeat:" << endl;
+	/*// Test start
 	for (int h = 0; h < detection->size(); h++)
 	{
 		cout << static_cast<int>(detection->at(h)) << " ";
 	}
 	cout << endl;
-	// Test end
+	// Test end*/
+    // cout<<"Tail Details:"<<endl;
 
-    cout<<"Tail Details:"<<endl;
+	// Local coordinates
+	int localStart = len - win;
+	int localEnd   = len - 1;
+
 	if (whichTail == MARK_A) {
-		cout<<"Entering MarkA"<<endl;
-		findMarkA(detection, pstvTail, 0, halfEnd);
+		// cout<<"Entering MarkA"<<endl;
+		findMarkA(detection, pstvTail, localStart, localEnd);
 	} else if (whichTail == MARK_P) {
-		findMarkP(detection, pstvTail, 0, halfEnd);
+		findMarkP(detection, pstvTail, localStart, localEnd);
 	} else {
 		string msg("Invalid mark. Valid marks are: ");
 		msg += Util::int2string(MARK_A);
@@ -82,89 +86,90 @@ void TailFinder::findMark() {
 		throw InvalidInputException(msg);
 	}
 
-	
+	// Make global coordinates
+	//(start, end, ratio)
+	if (pstvTail->size() == 3)
+	{
+		(*pstvTail)[0] = start + pstvTail->at(0);
+		(*pstvTail)[1] = start + pstvTail->at(1);
+	}
 
-			//(start,end,ratio)
-			if (pstvTail->size() == 3)
-			{
-				(*pstvTail)[0] = start + pstvTail->at(0);
-				(*pstvTail)[1] = start + pstvTail->at(1);
-			}
-			//string output = prettyFormatChrom(detection);
-			//cout <<output <<endl;
+	// Process the negative tail
+	vector<int> *ngtvTail = new vector<int>(); //stores info on reverse complement tail
+	string * rcDetection = new string();
+	Util::revCompDig(detection, rcDetection);
+	delete detection;
 
+	if (whichTail == MARK_A)
+	{    
+		findMarkA(rcDetection, ngtvTail, localStart,localEnd);
+	}
+	else if (whichTail == MARK_P)
+	{
+		findMarkP(rcDetection, ngtvTail, localStart,localEnd);
+	}
+	delete rcDetection;
 
+	if (ngtvTail->size() == 3)
+	{
+		// Calculate the global coordinates with respect to the positive strand
+		int ee = start + len - ngtvTail->at(0) - 1; //changed from at(1) to reflect alteration of BackwardTr
+		int ss = start+len-ngtvTail->at(1) -1;
+		//cout << "ss=" << ss+1 << endl;
+		//cout << "ee=" << ee << endl;
 
-			vector<int> *ngtvTail = new vector<int>(); //stores info on reverse complement tail
-			string *rcDetection = new string();
-			Util::revCompDig(detection, rcDetection);
-			delete detection;
+		(*ngtvTail)[0] = ss;
+		(*ngtvTail)[1] = ee;
+	}
 
-			if (whichTail == MARK_A)
-			{   cout<<"MarkA for reverse complement"<<endl;
-				findMarkA(rcDetection, ngtvTail, 0, halfEnd);
-			}
-			else if (whichTail == MARK_P)
-			{
-				findMarkP(rcDetection, ngtvTail, 0, halfEnd);
-			}
-			delete rcDetection;
-
-			if (ngtvTail->size() == 3)
-			{
-				int ss = start + len - ngtvTail->at(0) - 1; //changed from at(1) to reflect alteration of BackwardTr
-				cout << "ss=" << ss+1 << endl;
-				int ee = start + len - ngtvTail->at(1) - 1; // changed from at(0)
-				cout << "ee=" << ee << endl;
-				(*ngtvTail)[0] = ss;
-				(*ngtvTail)[1] = ee;
-			}
-
-			// The reverse sign is correct
-			if (pstvTail->size() == 3 && ngtvTail->size() == 0)
-			{
-				tail = pstvTail;
-				tail->push_back(-1);
-				delete ngtvTail;
-			}
-			else if (pstvTail->size() == 0 && ngtvTail->size() == 3)
-			{
-				tail = ngtvTail;
-				tail->push_back(1);
-				delete pstvTail;
-			}
-			else if (pstvTail->size() == 0 && ngtvTail->size() == 0)
-			{
-				tail = pstvTail;
-				delete ngtvTail;
-			}
-			else if (pstvTail->size() == 3 && ngtvTail->size() == 3)
-			{ //if both exist, use the longer one
-				int pstvLen = pstvTail->at(1) - pstvTail->at(0) + 1;
-				int ngtvLen = ngtvTail->at(1) - ngtvTail->at(0) + 1;
-				if (pstvLen > ngtvLen)
-				{
-					tail = pstvTail;
-					tail->push_back(-1);
-					delete ngtvTail;
-				}
-				else
-				{
-					tail = ngtvTail;
-					tail->push_back(1);
-					delete pstvTail;
-				}
-			}
-			else
-			{
-				string msg = string("The tail must have three coordinates only. ");
-				msg += string("The +ve tail has ");
-				msg += Util::int2string(pstvTail->size());
-				msg += string(" coordinates. The -ve tail has ");
-				msg += Util::int2string(ngtvTail->size());
-				msg += string(" coordinates.");
-				throw InvalidStateException(msg);
-			}
+	// Free memory used by tail(s)
+	// The reverse sign is correct
+	if (pstvTail->size() == 3 && ngtvTail->size() == 0)
+	{
+		tail = pstvTail;
+		// This -1 means the positive strand?
+		tail->push_back(1);
+		delete ngtvTail;
+	}
+	else if (pstvTail->size() == 0 && ngtvTail->size() == 3)
+	{
+		tail = ngtvTail;
+		tail->push_back(-1);
+		delete pstvTail;
+	}
+	else if (pstvTail->size() == 0 && ngtvTail->size() == 0)
+	{
+		tail = pstvTail;
+		delete ngtvTail;
+	}
+	else if (pstvTail->size() == 3 && ngtvTail->size() == 3)
+	{ 
+		//if both exist, use the longer one
+		int pstvLen = pstvTail->at(1) - pstvTail->at(0) + 1;
+		int ngtvLen = ngtvTail->at(1) - ngtvTail->at(0) + 1;
+		if (pstvLen > ngtvLen)
+		{
+			tail = pstvTail;
+			tail->push_back(1);
+			delete ngtvTail;
+		}
+		else
+		{
+			tail = ngtvTail;
+			tail->push_back(-1);
+			delete pstvTail;
+		}
+	}
+	else
+	{
+		string msg = string("The tail must have three coordinates only. ");
+		msg += string("The +ve tail has ");
+		msg += Util::int2string(pstvTail->size());
+		msg += string(" coordinates. The -ve tail has ");
+		msg += Util::int2string(ngtvTail->size());
+		msg += string(" coordinates.");
+		throw InvalidStateException(msg);
+	}
 
 			// For testing		int winIn, int minLenIn) {
 
@@ -200,6 +205,8 @@ void TailFinder::findMark() {
 	 */
 			// End testing
 }
+
+
 string utility::TailFinder::prettyFormatChrom( string * detection){
     std:: string ans;
 	for( int i =0;i<detection->length();i++){
@@ -208,17 +215,24 @@ string utility::TailFinder::prettyFormatChrom( string * detection){
 	return ans;
 }
 
+
 //used to find poly(A)
-void TailFinder::findMarkA(string * detection, vector<int> * tail, int segStart,
-		int halfEnd) {
-	int code = 3;//code for T nucleotide, which is complement of A in mRNA
-	double ratio = 0.8;
+void TailFinder::findMarkA(string * detection, vector<int> * tail, int searchStart,
+		int searchEnd) {
+	//int code = 3;//code for T nucleotide, which is complement of A in mRNA
+
+	int code = 0; // code for A
+	double ratio = 0.70;
+
+	//cout<<"seedLen: "<<seedLen<<endl;
+	//cout<<"gapLen: "<<gapLen<<endl;
 
 	// Find the first seed available then immediately break
 	bool isSeedFound = false;                                                                
 	int seedEnd;
 
-	for (int y = 0; y <= halfEnd - seedLen + 1; y++) { 
+
+	for (int y = searchStart; y <= searchEnd - seedLen + 1; y++) { 
 		int count = 0;
 		for (int x = y; x <= y + seedLen - 1; x++) {
 			if (detection->at(x) == code) {
@@ -229,7 +243,7 @@ void TailFinder::findMarkA(string * detection, vector<int> * tail, int segStart,
 		if (count == seedLen) {
 			seedEnd = y + seedLen - 1;
 			isSeedFound = true;
-			cout<<"Seed found at"<<seedEnd-seedLen +1<<","<<seedEnd<<endl;
+			//cout<<"Seed found at"<<seedEnd-seedLen +1<<","<<seedEnd<<endl;
 			break;
 		}
 	}
@@ -238,7 +252,7 @@ void TailFinder::findMarkA(string * detection, vector<int> * tail, int segStart,
 	if (isSeedFound) {
 		int gapCounter = 0;
 		int i = seedEnd + 1;
-		for (; i < halfEnd; i++) {
+		for (; i < searchEnd; i++) {
 			if (static_cast<int>(detection->at(i)) == code) {
 				gapCounter = 0;
 			} else {
@@ -249,69 +263,115 @@ void TailFinder::findMarkA(string * detection, vector<int> * tail, int segStart,
 				break;
 			}
 		}
+		i--; //decrement to make last valid index before gap
         
 		int tailStart = seedEnd - seedLen + 1;
 		int tailEnd = i;
 		//cout<<"start:"<<tailStart<<" end:"<<tailEnd<<endl;
 		//retreats back to last A nucleotide
 		for (int j = i; j >= i - gapLen; j--) {
-			if (static_cast<int>(detection->at(j)) == code) {
+			if (detection->at(j) == code) {
 				tailEnd = j;
 				break;
 			}
 		}
-        //must end with T
+        //must end with A
 		if (detection->at(tailEnd) != code) {
 			string msg("Invalid tail. The tail does not end with T.");
 			throw InvalidStateException(msg);
 		}
         //cout<<"tailStart:"<<tailStart<<" tailEnd:"<<tailEnd<<endl;
 		
-		double pTailLen = tailEnd - tailStart + 1;
-		double tCount = 0;
-		for (int h = tailStart; h <= tailEnd; h++) {
-			if (static_cast<int>(detection->at(h)) == code) {
-				tCount++;
+	// Extend seed backward
+
+		if(tailStart>searchStart){
+
+		int x = tailStart -1;
+		gapCounter = 0;
+
+
+		for(x; x >searchStart;x--){
+
+			if (detection->at(x) == code) {
+					gapCounter = 0;
+				} else {
+					gapCounter++;
+				}
+				if (gapCounter == gapLen) {
+					break;
+				}
+		}
+//cout << 3 << endl;
+
+
+		//trims the beginning
+
+		for (int q = x; q <x +gapLen;q++){
+			
+
+			if(detection->at(q) == code){
+
+				tailStart = q;
+				break;
 			}
 		}
-        /*cout<<" Longest A sequence is: "<<pTailLen<<endl;
-		cout<<"tCount="<<tCount<<endl;
-		cout<<"ratio ="<<(tCount/pTailLen)<<endl;*/
 
-		if (pTailLen >= minLen && (tCount / pTailLen) >= ratio) {
-			tail->push_back(tailStart + segStart); //tail[0] = start
-			tail->push_back(tailEnd + segStart); //tail[1] = end
-			double tCount = 0;
-			cout<<"tCount1="<<tCount<<endl;
+	}
+
+	
+		//count ratio and length
+
+				
+		double aTailLen = tailEnd - tailStart + 1;
+		double aCount = 0;
+
+		//counts A
+		for (int h = tailStart; h <= tailEnd; h++) {
+			if (detection->at(h) == code) {
+				aCount++;
+			}
+		}
+
+		if (aTailLen >= minLen && (aCount / aTailLen) >= ratio) {
+			tail->push_back(tailStart); //tail[0] = start
+			tail->push_back(tailEnd); //tail[1] = end
+			//double tCount = 0;
+			//cout<<"tCount1="<<tCount<<endl;
 	
 
-			tail->push_back(100 * tCount / pTailLen);
+			tail->push_back(100 * aCount / aTailLen);
 		}
 /*
-		if (tail->size() == 0 && halfEnd - segStart + 1 >= minLen) { //there is enough left to fit in a minLen tail
-			int shift = segStart + seedEnd; // increment by 
+		if (tail->size() == 0 && searchEnd - searchStart + 1 >= minLen) { //there is enough left to fit in a minLen tail
+			int shift = searchStart + seedEnd; // increment by 
 			string * rest = new string(detection->begin() + seedEnd,
 					detection->begin() + detection->size());
-			findMarkA(rest, tail, shift, halfEnd - seedEnd);
+			findMarkA(rest, tail, shift, searchEnd - seedEnd);
 			delete rest;
 		}*/
 	}
 }
 
 //used to find purines (A and G)
-void TailFinder::findMarkP(string * detection, vector<int> * tail, int segStart,
-		int halfEnd) {
-	double ratio = 0.65;
-	int codeC = 1;
-	int codeT = 3;
+void TailFinder::findMarkP(string * detection, vector<int> * tail, int searchStart,
+		int searchEnd) {
+
+	double ratio = 0.70;
+	int codeA = 0;
+	int codeG = 2;
 
 	// Find a seed
 	bool isSeedFound = false;
 	int seedEnd;
-	for (int y = 0; y <= halfEnd - seedLen + 1; y++) {
+
+
+	//cout<<"Starting purine search at: "<<searchStart<<endl;
+
+	
+	for (int y = searchStart; y <= searchEnd - seedLen + 1; y++) {
 		int count = 0;
 		for (int x = y; x <= y + seedLen - 1; x++) {
-			if (detection->at(x) == codeC || detection->at(x) == codeT) {
+			if (detection->at(x) == codeG || detection->at(x) == codeA) {
 				count++;
 			}
 		}
@@ -323,12 +383,14 @@ void TailFinder::findMarkP(string * detection, vector<int> * tail, int segStart,
 		}
 	}
 
-	// Extend
+	// Extend 
 	if (isSeedFound) {
 		int gapCounter = 0;
 		int i = seedEnd + 1;
-		for (; i < halfEnd; i++) {
-			if (detection->at(i) == codeC || detection->at(i) == codeT) {
+
+		//Extend forward
+		for (; i < searchEnd; i++) {
+			if (detection->at(i) == codeG || detection->at(i) == codeA) {
 				gapCounter = 0;
 			} else {
 				gapCounter++;
@@ -338,16 +400,28 @@ void TailFinder::findMarkP(string * detection, vector<int> * tail, int segStart,
 			}
 		}
 
+		i--; //decrement to make last valid index before gap
+
+//cout << 1 << endl;
+
+		// Trims end of the tail
 		int tailStart = seedEnd - seedLen + 1;
 		int tailEnd = i;
+
+		//cout<<"TAIL_START "<<tailStart<<endl;
+		//cout<<"TAIL_END "<<tailEnd<<endl;
+
 		for (int j = i; j >= i - gapLen; j--) {
-			if (detection->at(j) == codeC || detection->at(j) == codeT) {
+			if (detection->at(j) == codeG || detection->at(j) == codeA) {
 				tailEnd = j;
 				break;
 			}
 		}
 
-		if (!(detection->at(tailEnd) == codeC || detection->at(tailEnd) == codeT)) {
+//cout << 2 << endl;
+
+		// Post condition to ensure that the tail ends with G or A
+		if (!(detection->at(tailEnd) == codeG || detection->at(tailEnd) == codeA)) {
 			string msg("The tail does not end with C or T. ");
 			msg.append("The invalid base is: ");
 			msg.append(Util::int2string((int) detection->at(tailEnd)));
@@ -355,33 +429,82 @@ void TailFinder::findMarkP(string * detection, vector<int> * tail, int segStart,
 			throw InvalidStateException(msg);
 		}
 
-		double pTailLen = tailEnd - tailStart + 1;
-		double ctCount = 0;
-		for (int h = tailStart; h <= tailEnd; h++) {
-			if (detection->at(h) == codeC || detection->at(h) == codeT) {
-				ctCount++;
+		// Extend seed backward
+
+		if(tailStart>searchStart){
+
+		int x = tailStart -1;
+		gapCounter = 0;
+
+		
+
+		for(x; x >searchStart;x--){
+
+			if (detection->at(x) == codeG || detection->at(x) == codeA) {
+					gapCounter = 0;
+				} else {
+					gapCounter++;
+				}
+				if (gapCounter == gapLen) {
+					break;
+				}
+		}
+//cout << 3 << endl;
+
+
+		//trims the beginning
+
+		for (int q = x; q <x +gapLen;q++){
+			
+
+			if(detection->at(q) == codeG || detection->at(q) == codeA){
+
+				tailStart = q;
+				break;
 			}
 		}
 
-		if (pTailLen >= minLen && (ctCount / pTailLen) >= ratio) {
-			tail->push_back(tailStart + segStart);
-			tail->push_back(tailEnd + segStart);
+	}
 
-			double pCount = 0;
+//cout << 4 << endl;
+		// Count AG in the tail
+		// cout << "End of tail: " << tailEnd << endl;
+		double pTailLen = tailEnd - tailStart + 1;
+		double agCount = 0;
+		for (int h = tailStart; h <= tailEnd; h++) {
+			if (detection->at(h) == codeG || detection->at(h) == codeA) {
+				agCount++;
+			}
+		}
+
+		// Verifies the ratio and length criteria
+		if (pTailLen >= minLen && (agCount / pTailLen) >= ratio) {
+			tail->push_back(tailStart );
+			tail->push_back(tailEnd);
+
+			/*double pCount = 0;
 			for (int g = tailStart; g <= tailEnd; g++) {
-				if (detection->at(g) == codeC || detection->at(g) == codeT) {
+				if (detection->at(g) == codeG || detection->at(g) == codeA) {
 					pCount++;
 				}
-			}
-			tail->push_back(100 * pCount / pTailLen);
+			}*/
+			tail->push_back(100 * agCount / pTailLen);
 		}
 
-		if (tail->size() == 0 && halfEnd - segStart + 1 >= minLen) {
-			int shift = segStart + seedEnd;
-			string * rest = new string(detection->begin() + seedEnd,
-					detection->begin() + detection->size());
-			findMarkP(rest, tail, shift, halfEnd - seedEnd);
-			delete rest;
+		double count = 100*agCount/pTailLen;
+
+		//cout<<"Found percentage "<<count<<endl;
+		//cout<<"Found length "<<pTailLen<<endl;
+
+		
+		// recursively find next seed after the first one
+		if (tail->size() == 0 && searchEnd - searchStart + 1 >= minLen) {
+			// int shift = seedEnd;
+			// string * rest = new string(detection->begin() + seedEnd,
+			//			detection->begin() + detection->size());
+			//cout<<"seedEnd: "<<seedEnd<<endl;
+			//cout<<"searchEnd: "<<searchEnd<<endl;
+			findMarkP(detection, tail, seedEnd, searchEnd);
 		}
 	}
 }
@@ -392,6 +515,45 @@ void TailFinder::findMarkP(string * detection, vector<int> * tail, int segStart,
  * 4: start, end, strand: 1 indicates pstv and -1 indicates ngtv.
  */
 vector<int> * TailFinder::getTail() {
+
+	if(tail->size()==4){
+		/*
+		cout<< "Chromosome length is: "<<seq->length()<<endl;
+		for(int x = 0;x<tail->size();x++){
+			cout<<tail->at(x)<<",";
+
+		}
+		cout<<endl;
+		*/
+
+		int start = tail->at(0);
+		int end = tail->at(1);
+		int strand = tail->at(3);
+
+		/*
+
+		if(strand ==-1 || end<start){
+
+			int temp = start;
+			start = end;
+			end = temp;
+			cout<<"Swapped 'em"<<endl;
+		}
+
+		cout<<"s: "<<start<<endl;
+		cout<<"e: "<<end<<endl;*/
+
+		
+		string * detection = new string(seq->begin() + start, seq->begin() + end + 1);
+
+			for (int h = 0; h < detection->size(); h++){
+				
+			//	cout << static_cast<int>(detection->at(h));
+			}
+		//	cout << endl;
+
+	
+	}
 	return tail;
 }
 

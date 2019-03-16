@@ -37,6 +37,8 @@ Tr::Tr(int s1In, int e1In, int s2In, int e2In) {
 
 Tr::Tr(Tr& o) {
 	initialize(o.getS1(), o.getE1(), o.getS2(), o.getE2());
+
+	id = o.getIdentity();
 }
 
 void Tr::initialize(int s1In, int e1In, int s2In, int e2In) {
@@ -44,6 +46,7 @@ void Tr::initialize(int s1In, int e1In, int s2In, int e2In) {
 	e1 = e1In;
 	s2 = s2In;
 	e2 = e2In;
+	id = 0;
 
 	if (e1In < s1In) {
 		string msg("The start of the first TR must be <= its end. ");

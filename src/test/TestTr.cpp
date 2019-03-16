@@ -2,12 +2,13 @@
  * TestTr.cpp
  *
  *  Created on: Nov 30, 2012
- *      Author: Hani Zakaria Girgis, PhD
+ *      Author: Hani Zakaria Girgis, PhD and Joseph Valencia
  */
 
 #include "../nonltr/ChromosomeOneDigit.h"
 #include "../nonltr/Chromosome.h"
 #include "../nonltr/ChromosomeRandom.h"
+#include "../nonltr/ChromListMaker.h" 
 
 #include "../tr/ScorerTr.h"
 #include "../tr/FilterTr.h"
@@ -28,48 +29,67 @@
 #include <algorithm>
 #include <vector>
 #include <fstream>
+#include <experimental/filesystem>
 
 using namespace std;
-
 using namespace nonltr;
 using namespace utility;
 using namespace tr;
+
+
+namespace fs = std::experimental::filesystem;
 
 int getOptionalArg(vector<string> * args, string option){
     string answer = "-1";
 	auto it = std::find(args->begin(),args->end(),option);
 
 	if(it!=args->end() & ++it !=args->end()){
-
 		answer = * it;
 	}
-
 	return stoi(answer);
 }
 
-
-
 int main(int argc, char * argv[]) {
-	
-	//string chromFile = string("../src/FlyBaseR5.48/chrX-chromosome.fasta");
-    //string csvFile = string("../src/output/trial1.csv");
-	//string bedFile = string("../src/output/trial1.bed");
-	//string chromFile = string(argv[1]);
-
-	int minDist = 2000;
-	int maxDist = 18000;
+	int minDist = 400;
+	int maxDist = 22000;
 	int minLenLTR = 100;
-	int maxLenLTR = 2000;
+	int maxLenLTR = 6000;
 	int identity = 85;
-	int k = 14;
+	int k = 13;
 	int minPlateauLength = 10;
 	int gapTol = 200;
+	int threads = 1;
 	string chromDir ="";
 	string outputDir = "";
 	bool printRawScores = false;
 	bool printCleanScores = false;
+	bool displayHelp = false;
+	bool bedOutput = false;
+	bool displayNested = false;
 
-	//string options [] = {"-minLen", "-maxLen","-minLenLTR", "-maxLenLTR", "-id", "-k", "-plateauSeed","-gapTol"};
+
+	string helpMessage = 
+	"| -arg     | Description | Default |\n"
+	"| ---------------- | ----------- | ------- |\n"
+	"| -chromDir | Directory containing files to be scanned. Files must have .fa extension. | required |\n"
+	"| -destDir | Output directory where the results are stored. | required |\n"
+	"( IMPORTANT: Files under the output directory are deleted at the start of the program.)\n"
+	"| -minLen | Minimum length of complete LTR-RTs. Constrains scoring system and filters. | 400 |\n"
+	"| -maxLen |  Maximum length of complete LTR-RTs. Constrains scoring system and filters. | 22000 |\n"
+	"| -minLenLTR | Minimum length of LTR direct repeat. Constrains filters. | 100 |\n"
+	"| -maxLenLTR | Maximum length of LTR direct repeat. Constrains filters. | 6000 |\n"
+	"( Note run time is highly dependent on this parameter, as it provides an upper bound for alignment length in the boundary adjustment step.)\n"               
+	"| -id | Minimum identity [0-100] between 5' and 3' LTRs. | 85 |\n"
+	"| -k  | Length of k-mers to adjust scoring system. Tradeoff between noise and resistance to mutation. | 13 |\n"
+	"| -plateauSeed | Minimum length of plateaus to be initially considered 'Keep' in merging step. | 10 |\n"
+	"| -nThreads | Number of cores to be used. | 1 |\n"
+	"| -gapTol | Number of base pairs that two plateaus can differ by in height/distance. Affects both plateau merging and pairing steps. | 200 |\n"
+	"| -rawScores | prints the raw scores to a file called xxxxRawScores.txt under the output directory. | disabled |\n"
+	"| -cleanedScores | prints the scores after merging to a file called xxxxCleanedScores.txt under the output directory. | disabled |\n"
+	"| -nested | searches for nested elements. Results are stored in seperate files (marked as xxxxNestedDetector.bed) under the output directory | disabled |\n"
+	"| -bedFormat | prints BED format without additional annotations (PPT and TSD). | disabled |\n"
+	"| -help | prints this help message. | disabled |\n"
+	;
 
 	std::vector<string> * argList = new vector<string>();
 
@@ -77,7 +97,45 @@ int main(int argc, char * argv[]) {
 
 		argList->push_back(string(argv[i]));
 	}
-	
+
+	auto help = std::find(argList->begin(),argList->end(),"-help");
+
+	if(help!=argList->end()){
+		cout <<helpMessage<<endl;
+		exit(1);
+	}
+
+	auto printRaw = std::find(argList->begin(),argList->end(),"-rawScores");
+
+	if(printRaw!=argList->end()){
+
+		printRawScores = true;
+	}
+
+	auto printClean = std::find(argList->begin(),argList->end(),"-cleanedScores");
+
+		if(printClean!=argList->end()){
+
+		printCleanScores = true;
+	}
+
+
+	auto bed = std::find(argList->begin(),argList->end(),"-bedFormat");
+
+			if(bed!=argList->end()){
+
+			bedOutput= true;
+			cout <<"Bed format activated"<<endl;
+		}
+
+	auto nest = std::find(argList->begin(),argList->end(),"-nested");
+
+			if(nest!=argList->end()){
+
+			displayNested= true;
+			
+		}
+
 	auto src = std::find(argList->begin(),argList->end(),"-chromDir");
 
 	if(src!=argList->end() & ++src !=argList->end()){
@@ -151,31 +209,47 @@ int main(int argc, char * argv[]) {
 		gapTol = test;
 	}
 
-	
-	
-	//string csvFile = string(argv[9]);
-	
-	//cout<<"FIRST ARGUMENT"<<chromFile<<endl;
-	//cout<<"MIN ARGUMENT"<<minDist<<endl;
-	//cout<<"MAX ARGUMENT"<<maxDist<<endl;
-	//cout<<"LAST ARGUMENT"<<bedFile<<endl;;
-    //exit(1);
+	test = getOptionalArg(argList,"-nThreads");
+
+	if(test!=-1){
+		threads = test;
+	}
+
 
 	vector <string> * chromList = new vector<string>();
-	cout<<"Reading chromosome directory"<<endl;
+
+	if(!fs::exists(outputDir)){
+
+		bool status = fs::create_directory(outputDir);
+
+		if(!status){
+			cerr<<"Output Directory could not be made"<<endl;
+			throw std::exception();
+		}
+	}
+
+	Util::deleteFilesUnderDirectory(outputDir);
+
+	cout << "Reading chromosome directory ..." << endl;
 	Util::readChromList(chromDir, chromList,"fa");
 
 	ChromosomeOneDigit *chrom;
 
-	TrCollector *collector;
+	cout<<"Num threads: "<<threads<<endl;
+	cout<<minDist<<endl;
+	cout<<maxDist<<endl;
+	cout<<minLenLTR<<endl;
+	cout<<maxLenLTR<<endl;
+	cout<<identity<<endl;
+	cout<<k<<endl;
+	cout<<minPlateauLength<<endl;
+	cout<<gapTol<<endl;
 	
-	#pragma omp parallel for schedule(dynamic) num_threads(3)
-	
-	 for (int i = 0; i < chromList->size(); i++)
+	#pragma omp parallel for schedule(dynamic) num_threads(threads)
+	for (int i = 0; i < chromList->size(); i++)
 	{
 
 		string chromFile = chromList->at(i);
-		cout<<"Processing: "<<chromFile<<endl;
 
 		int nameBegin = chromFile.find_last_of("/")+1;
 		int nameEnd = chromFile.find_last_of(".") ;
@@ -183,38 +257,19 @@ int main(int argc, char * argv[]) {
 
 		string name = chromFile.substr(nameBegin,len);
 
-		
-		string bedFile = outputDir+"/"+name+"Detector.bed";
-
-		cout<<chromFile<<endl;
-		cout<<bedFile<<endl;
-		cout<<minDist<<endl;
-		cout<<maxDist<<endl;
-		cout<<minLenLTR<<endl;
-		cout<<maxLenLTR<<endl;
-		cout<<identity<<endl;
-		cout<<k<<endl;
-		cout<<minPlateauLength<<endl;
-		cout<<gapTol<<endl;
-		//chrom = new ChromosomeOneDigit(chromFile);
-		collector = new TrCollector(chromFile, bedFile,name, minDist, maxDist, minLenLTR, maxLenLTR,identity,k, minPlateauLength, gapTol);
-
-		cout << "Output from" << name << " found in: " << bedFile << endl;
-
-		delete collector;
-		
+		string outFile = outputDir+"/"+name;
+		ChromListMaker chromListMaker(chromFile);
+		const vector<ChromosomeOneDigit *> *  chromList = chromListMaker.makeChromOneDigitList();
+		for(auto chrom : *chromList){
+			TrCollector * collector = new TrCollector(chrom, outFile,name, minDist, maxDist, minLenLTR, maxLenLTR,identity,k, minPlateauLength, gapTol,printCleanScores,printRawScores,bedOutput,displayNested);
+			
+			delete collector;
+		}
 	}
 
-   
-	//TrCollector * collector = new TrCollector(chrom, 14, 2000, 11000, 11000, 50, 10, 10, "../src/output/test1.csv", indexFile);
-	//TrCollector *collector = new TrCollector(chrom, 14, 0, 0, 0);
-	// TrCollector * collector = new TrCollector(chrom, 9, 2000, 11000, 1000);
-	//vector<LtrTe *> * teList = collector->getTeList();
-	//cout << "Total number of LTR TE is: " << teList->size() << endl;
-	//collector->printIndex(indexFile);
-	
+	chromList->clear();
+	delete chromList;
 
 	return 0;
-
 }
 

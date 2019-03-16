@@ -1,9 +1,9 @@
-import os,sys 
+import os ,sys
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
-def slice(bedfile,name,scoresFile):
+def slice(bedfile,name, score_file):
 
     if not os.path.exists(name):
         os.mkdir(name)
@@ -21,20 +21,15 @@ def slice(bedfile,name,scoresFile):
     
     scores =[]
 
-    with open(scoresFile,'r') as infile:
+    with open(score_file,'r') as infile:
         scores = infile.readlines()
         
 
     for el in coords:
 
-
-
-        
         print el
         start = int(el[0])
         end = int(el[1])
-
-       
 
         
 
@@ -43,9 +38,7 @@ def slice(bedfile,name,scoresFile):
         
 
         bounds =[start,mid1,mid2,end-1]
-        
-        first = [start,mid1]
-        second = [mid2,end-1]
+        print bounds
         
         slice =name+"/"+el[0]+"-"+el[1]+".png"
 
@@ -56,36 +49,31 @@ def slice(bedfile,name,scoresFile):
 
         
 
+        d = {"idx":x, "score":y}
         
 
-        d = {"index":x, "score":y}
-        
+        df = pd.DataFrame(d,index = d["idx"])
 
-        df = pd.DataFrame(d,index = d["index"])
-        title = "LTR("+str(start)+":"+str(end)+")"
+        graph = df.plot(x = "idx", y = "score")
 
-        graph = df.plot(x = "index", y = "score",legend=False,title=title)
-
-        graph.set_xlabel("Index")
-        graph.set_ylabel("Score")
+        #f,ax = plt.subplots(1)
 
         graph.plot(bounds,[0.0]*len(bounds),"rv")
 
-
-
         fig = graph.get_figure()
-        fig.tight_layout()
-
-        fig.savefig(slice,dpi = 200)
+        #plt.plot( bounds, marker = "v", markerfacecolor ="r")
+        fig.savefig(slice)
 
 
 if __name__ == "__main__":
 
-    repeats = sys.argv[1]
-    outFolder = sys.argv[2]
-    scoresFile = sys.arg[3]
-    #slice("thaliana/Test/chr5Detector.bed", "thaliana/test") 
-    slice(repeats,outFolder)
+    chrom = sys.argv[1]
+    output_dir = sys.argv[2]
+    score_file = sys.argv[3]
+
+
+
+    slice(chrom,output_dir,score_file)
 
         
         

@@ -26,10 +26,13 @@ private:
 	int e;
 	void initializer(BackwardTr *, ITSD *, ITail *);
 	string toStringHelper();
+	bool nested;
+	bool deleted = false;
 
 public:
 	LtrTe(BackwardTr *, ITSD *, ITail *);
 	LtrTe(LtrTe &);
+	LtrTe(LtrTe &,int);
 	virtual ~LtrTe();
 
 	virtual int getEnd() const;
@@ -47,7 +50,15 @@ public:
 	void setPpt(ITail *);
 	void setTsd(ITSD *);
 
+	bool getNested();
+	void setNested(bool);
+
+
+	bool getDeleted();
+	void setDeleted(bool);
+
 	static bool lessThan(LtrTe* a, LtrTe* b);
+
 
 };
 

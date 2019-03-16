@@ -27,6 +27,8 @@ protected:
 	int e2;
 	bool isOverlappingSame(Tr *);
 	bool isOverlappingOpposite(Tr *);
+	double id;
+
 
 public:
 	Tr();
@@ -55,6 +57,8 @@ public:
 	virtual void setEnd(int) = 0;
 	virtual void setStart(int) = 0;
 	virtual int getLength() = 0;
+	virtual int getIdentity();
+	virtual void setIdentity(int);
 };
 
 }

@@ -10,6 +10,7 @@
 
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 #include "Chromosome.h"
 #include "ChromosomeOneDigit.h"
@@ -24,14 +25,21 @@ namespace nonltr {
 class ChromListMaker {
 private:
 	vector<Chromosome *> * chromList;
+	vector<ChromosomeOneDigit *> * chromOList;
+	unordered_map<Chromosome *, pair<string, int>> * chromSplitMap;
+	unordered_map<ChromosomeOneDigit *, pair<string, int>> * chromOSplitMap;
 	string seqFile;
+	int limit;
+	bool passedLimit;
 
 public:
-	ChromListMaker (string);
+	ChromListMaker(string);
+	ChromListMaker(string, int);
 	virtual ~ChromListMaker();
 	const vector<Chromosome *> * makeChromList();
-	//void makeChromList(vector<Chromosome *>&);
-	const vector<Chromosome *> * makeChromOneDigitList();
+	const vector<ChromosomeOneDigit *> * makeChromOneDigitList();
+	pair<string, int> getStartOfChromosome(Chromosome *);
+	pair<string, int> getStartOfChromosome(ChromosomeOneDigit *);
 };
 
 } /* namespace nonltr */

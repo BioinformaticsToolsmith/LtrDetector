@@ -29,6 +29,49 @@ LtrTe::LtrTe(LtrTe& copy) {
 	initializer(copy.getLtr(), copy.getTsd(), copy.getPpt());
 }
 
+LtrTe::LtrTe(LtrTe& another, int offset) {
+
+	BackwardTr * ltr = another.getLtr();
+	int s1 = offset + ltr->getS1();
+	int e1 = offset + ltr->getE1();
+	int s2 = offset + ltr->getS2();
+	int e2 = offset + ltr->getE2();
+	BackwardTr * shiftedLtr = new BackwardTr(s1, e1, s2, e2);
+
+	ITSD * tsd = another.getTsd();
+
+	ITSD * shiftedTSD = tsd;
+
+	if(tsd != EmptyTSD::getInstance()){
+
+	 shiftedTSD= new TSD(*tsd,offset);
+	}
+
+	ITail * ppt = another.getPpt();
+
+	ITail * shiftedTail = ppt;
+
+	if(ppt!= EmptyTail::getInstance()){
+
+	shiftedTail= new Tail(*ppt,offset);
+	}
+
+
+	initializer(shiftedLtr,shiftedTSD,shiftedTail);
+	delete shiftedLtr;
+
+	if(tsd != EmptyTSD::getInstance()){
+
+	delete shiftedTSD;
+	}
+
+	if(ppt!= EmptyTail::getInstance()){
+	delete shiftedTail;
+	}
+
+
+}
+
 void LtrTe::initializer(BackwardTr * ltrIn, ITSD * tsdIn, ITail * pptIn) {
 	ltr = new BackwardTr(*ltrIn);
 
@@ -95,6 +138,16 @@ ITail * LtrTe::getPpt() {
 ITSD * LtrTe::getTsd() {
 	return tsd;
 }
+
+void LtrTe::setNested(bool isNested){
+
+	nested = isNested;
+}
+
+bool LtrTe::getNested(){
+
+	return nested;
+}
 //11/9/17 changed to print in .bed format rather than .coor
 string LtrTe::toString(string header) {
 	string msg("");
@@ -158,4 +211,11 @@ bool LtrTe::lessThan(LtrTe* a, LtrTe* b) {
 	return a->getStart() < b->getStart();
 }
 
+bool LtrTe::getDeleted(){
+	return deleted;
+}
+
+void LtrTe::setDeleted(bool status){
+	deleted = status;
+}
 } /* namespace tr */

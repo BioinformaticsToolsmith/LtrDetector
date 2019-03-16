@@ -1,8 +1,8 @@
-#CXX = /usr/local/bin/g++-8  #Linux(Ubuntu)
-CXX = /usr/bin/g++ #MacOS
+CXX = /usr/bin/g++  #Linux(Ubuntu)
+#CXX = /usr/bin/g++ #MacOS
 
-#CXXFLAGS = -std=c++11 -g -O3 -fopenmp -fmessage-length=0 # Linux
-CXXFLAGS = -Xpreprocessor -fopenmp -lomp  -std=c++11 -g -O3 -fmessage-length=0 #MacOS
+CXXFLAGS = -std=c++17 -g -O3 -fopenmp -fmessage-length=0 # Linux
+#CXXFLAGS = -Xpreprocessor -fopenmp -lomp  -std=c++11 -g -O3 -fmessage-length=0 #MacOS
 
 
 
@@ -276,7 +276,7 @@ $(OTrainer): nonltr/Trainer.cpp nonltr/Trainer.h nonltr/TableBuilder.h nonltr/Km
 	
 $(OChromListMaker): nonltr/ChromListMaker.cpp nonltr/ChromListMaker.h nonltr/Chromosome.h nonltr/ChromosomeOneDigit.h utility/Util.h
 	$(CXX) $(CXXFLAGS) -c nonltr/ChromListMaker.cpp -o $(OChromListMaker) 
-	#include "ForwardTr.h"
+
 $(OCluster): nonltr/Cluster.cpp nonltr/Cluster.h utility/Util.h exception/InvalidStateException.h exception/InvalidInputException.h
 	$(CXX) $(CXXFLAGS) -c nonltr/Cluster.cpp -o $(OCluster)
 	
@@ -360,11 +360,11 @@ $(TTestAssembler): $(OTestAssembler) $(OTailFinder) $(OChromosomeOneDigit) $(OCh
 # Make Test TR
 #
 
-$(OTestTr): nonltr/Chromosome.h nonltr/ChromosomeRandom.h nonltr/ChromosomeOneDigit.h tr/ScorerTr.h tr/DetectorTr.h tr/FilterTr.h tr/Tr.h tr/ForwardTr.h tr/BackwardTr.h tr/TrCollector.h utility/Util.h utility/LCS.h utility/LCSLen.h utility/Location.h utility/ILocation.h utility/LCSubStr.h utility/TSD.h 
+$(OTestTr): nonltr/Chromosome.h nonltr/ChromosomeRandom.h nonltr/ChromosomeOneDigit.h tr/ScorerTr.h tr/DetectorTr.h tr/FilterTr.h tr/Tr.h tr/ForwardTr.h tr/BackwardTr.h tr/TrCollector.h utility/Util.h utility/LCS.h utility/LCSLen.h utility/Location.h utility/ILocation.h utility/LCSubStr.h utility/TSD.h nonltr/ChromListMaker.h
 	$(CXX) $(CXXFLAGS) -c test/TestTr.cpp -o $(OTestTr)
 	
-$(TTestTr): $(OTestTr) $(OInvalidInputException) $(OFileDoesNotExistException) $(OInvalidStateException) $(OInvalidOperationException) $(OTr) $(OBackwardTr) $(OForwardTr) $(OCandidate) $(OPairContainer) $(OScorerTr) $(OChromosome) $(OChromosomeOneDigit) $(OChromosomeRandom) $(OTrKVisitor) $(OTrCsVisitor) $(OTrSineVisitor) $(OFilterTr) $(OLtrTe) $(ODetectorTr) $(OMatchTr) $(OUtil) $(OLocation) $(OEmptyLocation) $(OLCS) $(OLCSLen) $(OLCSubStr) $(OTSD) $(OEmptyTSD) $(OTailFinder) $(OTail) $(OEmptyTail) $(OTrCollector) $(OGlobAlignE) $(OLocAlign)
-	$(CXX) $(CXXFLAGS) -o $(TTestTr) $(OTestTr) $(OInvalidInputException) $(OFileDoesNotExistException) $(OInvalidStateException) $(OInvalidOperationException) $(OTr) $(OBackwardTr) $(OForwardTr) $(OCandidate) $(OPairContainer) $(OScorerTr) $(OChromosome) $(OChromosomeOneDigit) $(OChromosomeRandom) $(OTrKVisitor) $(OTrCsVisitor) $(OTrSineVisitor) $(OFilterTr) $(OLtrTe) $(ODetectorTr) $(OMatchTr) $(OUtil) $(OLocation) $(OEmptyLocation) $(OLCS) $(OLCSLen) $(OLCSubStr) $(OTSD) $(OEmptyTSD) $(OTailFinder) $(OTail) $(OEmptyTail) $(OTrCollector) $(OGlobAlignE) $(OLocAlign)
+$(TTestTr): $(OTestTr) $(OInvalidInputException) $(OFileDoesNotExistException) $(OInvalidStateException) $(OInvalidOperationException) $(OTr) $(OBackwardTr) $(OForwardTr) $(OCandidate) $(OPairContainer) $(OScorerTr) $(OChromosome) $(OChromosomeOneDigit) $(OChromosomeRandom) $(OTrKVisitor) $(OTrCsVisitor) $(OTrSineVisitor) $(OFilterTr) $(OLtrTe) $(ODetectorTr) $(OMatchTr) $(OUtil) $(OLocation) $(OEmptyLocation) $(OLCS) $(OLCSLen) $(OLCSubStr) $(OTSD) $(OEmptyTSD) $(OTailFinder) $(OTail) $(OEmptyTail) $(OTrCollector) $(OGlobAlignE) $(OLocAlign) $(OChromListMaker)
+	$(CXX) $(CXXFLAGS) -o $(TTestTr) $(OTestTr) $(OInvalidInputException) $(OFileDoesNotExistException) $(OInvalidStateException) $(OInvalidOperationException) $(OTr) $(OBackwardTr) $(OForwardTr) $(OCandidate) $(OPairContainer) $(OScorerTr) $(OChromosome) $(OChromosomeOneDigit) $(OChromosomeRandom) $(OTrKVisitor) $(OTrCsVisitor) $(OTrSineVisitor) $(OFilterTr) $(OLtrTe) $(ODetectorTr) $(OMatchTr) $(OUtil) $(OLocation) $(OEmptyLocation) $(OLCS) $(OLCSLen) $(OLCSubStr) $(OTSD) $(OEmptyTSD) $(OTailFinder) $(OTail) $(OEmptyTail) $(OTrCollector) $(OGlobAlignE) $(OLocAlign) $(OChromListMaker) -lstdc++fs
 
 #
 # Make Stand alone - SamplerForReCon
@@ -453,6 +453,17 @@ test: $(TTestDetector)
 randomGenome: $(TRandomGenomeMaker)
 processor: $(TMarkovSequenceProcessor)
 util: $(TAlignUtility)
+
+#
+# Make initial directories
+#
+bin:
+	mkdir ../bin
+	mkdir ../bin/exception
+	mkdir ../bin/utility
+	mkdir ../bin/nonltr
+	mkdir ../bin/tr
+	mkdir ../bin/test
 
 #
 # Make clean

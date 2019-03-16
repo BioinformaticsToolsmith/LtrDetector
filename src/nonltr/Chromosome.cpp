@@ -5,7 +5,6 @@
  *      Author: Hani Zakaria Girgis, PhD - NCBI/NLM/NIH
  */
 #include "Chromosome.h"
-#include <string.h>
 
 Chromosome::Chromosome() {
 	header = string("");
@@ -30,6 +29,12 @@ Chromosome::Chromosome(string fileName, bool canMerge) {
 Chromosome::Chromosome(string fileName, int len) {
 	chromFile = fileName;
 	readFasta();
+	help(len, true);
+}
+
+Chromosome::Chromosome(string fileName, int len, int maxLength) {
+	chromFile = fileName;
+	readFasta(maxLength);
 	help(len, true);
 }
 
@@ -98,32 +103,43 @@ void Chromosome::finalize() {
 }
 
 void Chromosome::help(int len, bool canMerge) {
+	canClean = true;
+
 	effectiveSize = 0;
 	segLength = len;
 	segment = new vector<vector<int> *>();
-	// 3/31/2016
-	//segment->reserve(100);
 
 	toUpperCase();
+
+	baseCount = new vector<int>(4, 0);
+	makeBaseCount();
+
 	removeN();
-	if (canMerge) {
+
+	if (canMerge && base.size() > 20) {
 		mergeSegments();
 	}
 
-	if( size() > segLength ){
-		makeSegmentList();
-	}
-
+	makeSegmentList();
 	calculateEffectiveSize();
+
 }
 
 Chromosome::~Chromosome() {
-	header.clear();
 	base.clear();
 
-	Util::deleteInVector(segment);
-	segment->clear();
-	delete segment;
+	if (canClean) {
+		while (!segment->empty()) {
+			segment->back()->clear();
+			delete segment->back();
+			segment->pop_back();
+		}
+		segment->clear();
+		delete segment;
+
+		baseCount->clear();
+		delete baseCount;
+	}
 }
 
 void Chromosome::readFasta() {
@@ -132,6 +148,14 @@ void Chromosome::readFasta() {
 	base = string("");
 
 	ifstream in(chromFile.c_str());
+	if (in.fail()) {
+		string msg("Cannot open ");
+		msg.append(chromFile);
+		msg.append(". System code is: ");
+		msg.append(Util::int2string(errno));
+		throw InvalidInputException(msg);
+	}
+
 	while (in.good()) {
 		string line;
 		getline(in, line);
@@ -141,10 +165,46 @@ void Chromosome::readFasta() {
 				msg = msg + chromFile;
 				msg =
 						msg
-								+ " must have one sequence only. But it has more than one.";
+						+ " must have one sequence only. But it has more than one.";
 				throw InvalidInputException(msg);
 			} else {
-				header = line.substr(1);
+				header = line;
+				isFirst = false;
+			}
+		} else {
+			base.append(line);
+		}
+	}
+	in.close();
+}
+
+void Chromosome::readFasta(int maxLength) {
+	bool isFirst = true;
+	header = string("");
+	base = string("");
+
+	ifstream in(chromFile.c_str());
+	if (in.fail()) {
+		string msg("Cannot open ");
+		msg.append(chromFile);
+		msg.append(". System code is: ");
+		msg.append(Util::int2string(errno));
+		throw InvalidInputException(msg);
+	}
+
+	while (in.good() && base.size() < maxLength) {
+		string line;
+		getline(in, line);
+		if (line[0] == '>') {
+			if (!isFirst) {
+				string msg = "Chromosome file: ";
+				msg = msg + chromFile;
+				msg =
+						msg
+						+ " must have one sequence only. But it has more than one.";
+				throw InvalidInputException(msg);
+			} else {
+				header = line;
 				isFirst = false;
 			}
 		} else {
@@ -174,13 +234,8 @@ void Chromosome::removeN() {
 			start = i;
 		} else if (base[i] == 'N' && start != -1) {
 			vector<int> * v = new vector<int>();
-
 			v->push_back(start);
 			v->push_back(i - 1);
-
-			// 3/31/201
-			//v->shrink_to_fit();
-
 			segment->push_back(v);
 
 			start = -1;
@@ -189,12 +244,7 @@ void Chromosome::removeN() {
 			v->push_back(start);
 			v->push_back(i);
 
-			// 3/31/201
-			//v->shrink_to_fit();
-
-
 			segment->push_back(v);
-
 			start = -1;
 		}
 	}
@@ -205,53 +255,43 @@ void Chromosome::removeN() {
  * Segments that are shorter than 20 bp are not added.
  */
 void Chromosome::mergeSegments() {
-	// To do: set the size of the segment to 2
+	if (segment->size() > 0) {
+		vector<vector<int> *> * mSegment = new vector<vector<int> *>();
+		int s = segment->at(0)->at(0);
+		int e = segment->at(0)->at(1);
 
-	vector<vector<int> *> * mSegment = new vector<vector<int> *>();
+		for (int i = 1; i < segment->size(); i++) {
+			int s1 = segment->at(i)->at(0);
+			int e1 = segment->at(i)->at(1);
 
-	int s = segment->at(0)->at(0);
-	int e = segment->at(0)->at(1);
+			if (s1 - e < 10) {
+				e = e1;
+			} else {
+				if (e - s + 1 >= 20) {
+					vector<int> * seg = new vector<int>();
+					seg->push_back(s);
+					seg->push_back(e);
+					mSegment->push_back(seg);
+				}
 
-	for (int i = 1; i < segment->size(); i++) {
-		int s1 = segment->at(i)->at(0);
-		int e1 = segment->at(i)->at(1);
-
-		if (s1 - e < 10) {
-			e = e1;
-		} else {
-			if (e - s + 1 >= 20) {
-				vector<int> * seg = new vector<int>();
-				seg->push_back(s);
-				seg->push_back(e);
-
-				// 3/31/201
-				//seg->shrink_to_fit();
-
-
-				mSegment->push_back(seg);
+				s = s1;
+				e = e1;
 			}
-
-			s = s1;
-			e = e1;
 		}
+
+		// Handle the last index
+		if (e - s + 1 >= 20) {
+			vector<int> * seg = new vector<int>();
+			seg->push_back(s);
+			seg->push_back(e);
+			mSegment->push_back(seg);
+		}
+
+		Util::deleteInVector(segment);
+		segment->clear();
+		delete segment;
+		segment = mSegment;
 	}
-
-	// Handle the last index
-	if (e - s + 1 >= 20) {
-		vector<int> * seg = new vector<int>();
-		seg->push_back(s);
-		seg->push_back(e);
-
-		// 3/31/201
-		//seg->shrink_to_fit();
-
-		mSegment->push_back(seg);
-	}
-
-	Util::deleteInVector(segment);
-	segment->clear();
-	segment = mSegment;
-
 }
 
 void Chromosome::makeSegmentList() {
@@ -266,24 +306,17 @@ void Chromosome::makeSegmentList() {
 
 			for (int h = 0; h < fragNum; h++) {
 				int fragStart = s + (h * segLength);
-				int fragEnd = (h == fragNum - 1) ? e : fragStart + segLength - 1;
+				int fragEnd =
+						(h == fragNum - 1) ? e : fragStart + segLength - 1;
 				vector<int> * v = new vector<int>();
 				v->push_back(fragStart);
 				v->push_back(fragEnd);
-
-				// 3/31/201
-				//v->shrink_to_fit();
-
 				segmentList->push_back(v);
 			}
 		} else {
 			vector<int> * v = new vector<int>();
 			v->push_back(segment->at(oo)->at(0));
 			v->push_back(segment->at(oo)->at(1));
-
-			// 3/31/201
-		//	v->shrink_to_fit();
-
 			segmentList->push_back(v);
 		}
 	}
@@ -293,9 +326,16 @@ void Chromosome::makeSegmentList() {
 	segment = segmentList;
 }
 
-
 const string* Chromosome::getBase() {
 	return &base;
+}
+
+string& Chromosome::getBaseRef() {
+	return base;
+}
+
+string& Chromosome::getHeaderRef() {
+	return header;
 }
 
 const vector<vector<int> *> * Chromosome::getSegment() {
@@ -342,4 +382,27 @@ int Chromosome::getGcContent() {
 		}
 	}
 	return gc;
+}
+
+void Chromosome::makeBaseCount() {
+	int size = base.size();
+	for (int i = 0; i < size; i++) {
+		switch (base.at(i)) {
+		case 'A':
+			baseCount->at(0)++;break
+			;			case 'C':
+				baseCount->at(1)++;
+				break;
+			case 'G':
+				baseCount->at(2)++;
+				break;
+			case 'T':
+				baseCount->at(3)++;
+				break;
+		}
+	}
+}
+
+vector<int> * Chromosome::getBaseCount() {
+	return baseCount;
 }

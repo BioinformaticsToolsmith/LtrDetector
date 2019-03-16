@@ -15,6 +15,8 @@ namespace nonltr {
 class ChromosomeOneDigit: public Chromosome {
 
 private:
+	bool canClean = false;
+
 	/* Fields */
 	map<char, char> * codes;
 
@@ -31,7 +33,9 @@ public:
 	/* Methods */
 	ChromosomeOneDigit();
 	ChromosomeOneDigit(string);
-	ChromosomeOneDigit(string, string);
+	ChromosomeOneDigit(string, int, int);
+	ChromosomeOneDigit(string&, string&);
+	ChromosomeOneDigit(string&, string&, int);
 	virtual ~ChromosomeOneDigit();
 	virtual void finalize();
 

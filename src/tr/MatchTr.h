@@ -44,11 +44,12 @@ private:
 
 public:
     vector <BackwardTr*> * getRepeatCandidates();
-    MatchTr(vector<int> *,int,int,string,int,int,int,int,int,int);
+    MatchTr(vector<int> *,int,int,int,int,int,int,int,int);
     virtual ~MatchTr();
     void bedFormat(int,int);
     void printFinalScores(int, int);
     void adjustBounds();
+    vector<int> * getScoreList();
 };
 
 }

@@ -62,13 +62,16 @@ TSD::TSD(const string * seq, ILocation * te, int w, int init) {
 
 	// Determine the closest TSD
 	LCSubStr * lcss = new LCSubStr(cSeq, ltWin, cSeq, rtWin);
+
 	vector<vector<ILocation *> *> * r = lcss->getCSubStr();
+
 	int min = 1000000;
 	int minIndex = -1;
 
 	int tsdFound = r->at(0)->size();
 
 	for (int j = 0; j < tsdFound; j++) {
+		
 		ILocation * lt = r->at(0)->at(j);
 		ILocation * rt = r->at(1)->at(j);
 
@@ -126,6 +129,15 @@ TSD::TSD(const string * seq, ILocation * te, int w, int init) {
 TSD::TSD(ITSD& copy) {
 	ltTsd = new Location(*copy.getLtTsd());
 	rtTsd = new Location(*copy.getRtTsd());
+	tsdSize = copy.getTsdSize();
+}
+
+TSD::TSD(ITSD& copy, int offset) {
+
+
+	ltTsd = new Location(copy.getLtTsd()->getStart()+offset,copy.getLtTsd()->getEnd()+offset);
+
+	rtTsd = new Location(copy.getRtTsd()->getStart()+offset,copy.getRtTsd()->getEnd()+offset);
 	tsdSize = copy.getTsdSize();
 }
 

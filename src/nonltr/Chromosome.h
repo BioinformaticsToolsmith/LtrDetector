@@ -30,12 +30,16 @@ public:
 	Chromosome(string);
 	Chromosome(string, bool);
 	Chromosome(string, int);
+	Chromosome(string, int, int);
 	Chromosome(string &, string&);
 	Chromosome(string &, string&, int);
 
 	int getGcContent();
 
 	virtual ~Chromosome();
+
+	virtual string& getBaseRef();
+	virtual string& getHeaderRef();
 
 	virtual const string* getBase();
 	virtual const vector<vector<int> *> * getSegment();
@@ -47,7 +51,7 @@ public:
 	virtual void setSequence(string&);
 	virtual void appendToSequence(string&);
 	virtual void finalize();
-
+	virtual vector<int> * getBaseCount();
 
 protected:
 	string chromFile;
@@ -58,6 +62,7 @@ protected:
 
 	vector<vector<int> *> * segment;
 	void readFasta();
+	void readFasta(int);
 	void toUpperCase();
 	void removeN();
 	void mergeSegments();
@@ -69,9 +74,11 @@ private:
 	bool isHeaderReady;
 	bool isBaseReady;
 	bool isFinalized;
+	bool canClean = false;
 
 	void reverseSegments();
-
+	void makeBaseCount();
+	vector<int> * baseCount;
 };
 }
 

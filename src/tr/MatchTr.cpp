@@ -9,6 +9,7 @@
 #include <vector>
 #include <tuple>
 #include <stack>
+#include <cmath>
 
 #include "MatchTr.h"
 #include "ForwardTr.h"
@@ -19,20 +20,19 @@
 
 using namespace std;
 
-//using namespace nonltr;
 using namespace utility;
 using namespace exception;
 
 namespace tr{
 
-MatchTr::MatchTr(vector<int> * scoreListIn,int kIn, int initValueIn,string bedFileIn,int minIn, int maxIn, int ltrMinIn,int plateauLenIn,  int gapTolIn, int id)   {
+MatchTr::MatchTr(vector<int> * scoreListIn,int kIn, int initValueIn,int minIn, int maxIn, int ltrMinIn,int plateauLenIn,  int gapTolIn, int id)   {
     
     k = kIn;
     scoreList = scoreListIn;
   
     initValue = initValueIn;
     
-    bedFileName = bedFileIn;
+
     min = minIn;
 	max = maxIn;
 	ltrMin = ltrMinIn;
@@ -52,8 +52,7 @@ MatchTr::MatchTr(vector<int> * scoreListIn,int kIn, int initValueIn,string bedFi
 void MatchTr::cleanAndMerge(){
     
 	int len = scoreList->size();
-    //cout<<"len="<<len<<endl;
-	//cout<<"INITIAL SCORE"<<initValue<<endl;
+
   
 	for(int i = 0;i<len;i++){
         
@@ -75,37 +74,37 @@ void MatchTr::cleanAndMerge(){
 			if(peakLength < minPlateauLen){
 				
 				std::tuple<char,int, int> discard = make_tuple('D',i, i + peakLength);
-				//cout<<"Delete pushback"<<endl;
-				//cout<<"("<<std::get<0>(discard)<<","<<std::get<1>(discard)<<")"<<endl;
+
 				spikes.push_back(discard);
 
 			}
 			else{
 				std::tuple<char,int, int> keep = make_tuple('K',i, i + peakLength);
-				//cout<<"Keep pushback"<<endl;
-               // cout<<"("<<std::get<0>(keep)<<","<<std::get<1>(keep)<<","<<std::get<2>(keep)+k<<")"<<endl;
+
                 spikes.push_back(keep);
 			}
 			
 			i += peakLength;
 		}
 	}
-	//cout<<"Passed initial collections!"<<endl;
-	//cout<<"Spikes size:"<<spikes.size()<<endl;
+
 	forwardMerge();
-	//cout<<"passed forward Merge"<<endl;
+
 
 	backwardMerge();
-	//cout << "passed bmatchesackward Merge" << endl;
+
 	//medianSmooth();
 	smoothAndCollect();
-	//cout<<"passed smooth and collect"<<endl;
+
 
 }
 
 
 void MatchTr::forwardMerge(){
-    //int GAP_TOLERANCE = k;int init = scorer->getInitialScore();
+	// Thanks to Robert Hubley for finding and fixing a bug related to the following 3 lines.
+	if(spikes.size() ==0){
+		return;
+	}
     
     for (int i = 0; i < spikes.size()-1; i++)
 	{
@@ -114,27 +113,15 @@ void MatchTr::forwardMerge(){
 		int curr_end;
 		std::tie(curr_type, curr_start, curr_end) = spikes.at(i);
 
-
-			//	vector<int> section(scoreList->begin()+curr_start,scoreList->begin()+curr_end);
-
 		int level = findMedian(curr_start, curr_end);
-
-		//cout <<"CURR== "<< curr_type << "," << curr_start << "," << curr_end << "," << level << endl;
 
 		char next_type;
         int next_start;
 		int next_end;
 		std::tie(next_type, next_start, next_end) = spikes.at(i + 1);
 
-		
-		//	vector<int> section1(scoreList->begin() + next_start, scoreList->begin() + next_end);
-		
-	
 		int neighborScore = findMedian(next_start,next_end);
 
-	   // cout<<"NEXT= "<<next_type<<","<<next_start<<","<<next_end<<","<<neighborScore<<endl;
-
-		//cout << "level:" << level << ", neighbor:" << neighborScore << endl;
 		if (next_type == 'K')
 		{
 			if (abs(neighborScore - level) < diffThresh && (curr_end + gapTol) >= next_start) // spikes are at same level and within distance of gapTol
@@ -152,17 +139,8 @@ void MatchTr::forwardMerge(){
 			
 				}
 			}
-/*
-			else if(curr_type == 'K' && (curr_end+gapTol)>=next_start)// two extended sections not at the same level but withing distance of gapTol
-			{
-				for(int j = curr_end;j<=next_end;j++){  //overwrite old keep section
-					(*scoreList)[j] = neighborScore;
-				}
-			}
 
-*/
-				
-		
+					
 		}
 
 			else if (curr_type =='K' && next_type == 'D'){
@@ -170,11 +148,6 @@ void MatchTr::forwardMerge(){
 				if (abs(neighborScore - level) < diffThresh && (curr_end + gapTol) >= next_start) // spikes are at same level and within distance of k
 
 				{
-
-					
-				//cout << "K->D" << endl;
-
-					//  cout<<"MERGING!"<<endl;
 					for (int j = curr_end; j <= next_start; j++) //replaced curr_end with curr_start. TODO: Find out why next-start bounds are off at 1824000-1832000
 					{
 						
@@ -243,36 +216,31 @@ void MatchTr::medianSmooth()
 
 void MatchTr::backwardMerge()
 {
-
+	// Thanks to Robert Hubley for finding and fixing a bug related to the following 3 lines.
+	if(spikes.size() ==0){
+		return;
+	}
+    
 	for (int i = spikes.size()-1; i>=1; i--)
 	{
 		char curr_type;
 		int curr_start;
 		int curr_end;
 		std::tie(curr_type, curr_start, curr_end) = spikes.at(i);
-
-		//vector<int> section(scoreList->begin() + curr_start, scoreList->begin() + curr_end);
-	
-		//std::nth_element(section.begin(), section.begin() + section.size() / 2, section.end());
-
 		int level = findMedian(curr_start, curr_end);
 		
-
 		char next_type;
         int next_start;
 		int next_end;
 		std::tie(next_type, next_start, next_end) = spikes.at(i - 1);
 
-		//vector<int> section1(scoreList->begin() + next_start, scoreList->begin() + next_end);
-		//std::nth_element(section1.begin(), section1.begin() + section1.size() / 2, section1.end());
 		int neighborScore = findMedian(next_start,next_end);
-		//cout<<"level:"<<level<<", neighbor:"<<neighborScore<<endl;
+
 
 		if (curr_type == 'K' && next_type == 'D'){
 
 			if (abs(neighborScore - level) < diffThresh && (curr_start - gapTol) <= next_end) // spikes are at same level and within distance of k
 			{
-				//  cout<<"MERGING!"<<endl;
 				for (int j = curr_start; j > next_start; j--)
 				{
 					(*scoreList)[j] = level;
@@ -281,17 +249,11 @@ void MatchTr::backwardMerge()
 
 		}
 	}
-
-	   //delete spikes;
 }
 
 void MatchTr::smoothAndCollect(){
 	//Repeat collection
 	int len = scoreList->size();
-	//int len = 16000000;
-	//int lencandidate = 1000000;
-	//vector<std::tuple<int, int>> plateaus;
-
 	for (int i = 0; i < len; i++)
 	{
 
@@ -316,16 +278,11 @@ void MatchTr::smoothAndCollect(){
 		
 			int minSizeKeep = identity * ltrMin / 100;
 
-
-			//cout << "Peak length is:" << peakLength << endl;
 			if (peakLength >= minSizeKeep) //added this parameter
 			{
                 int height = findMedian(i,i+peakLength-1);
 
-				
-
 				Candidate *keep = new Candidate(i, i + peakLength - 1, height);
-				//cout << "(" << std::get<0>(keep) << "," << std::get<1>(keep) << ")" << endl;
 				plateaus.push_back(keep);
 
 			}
@@ -341,80 +298,31 @@ void MatchTr::smoothAndCollect(){
 			i += peakLength - 1;
 		}
 	}
-	//	cout<<"SIZE OF PLATEAUS VECTOR"<<plateaus.size()<<endl;
-		//std::stack<std::tuple<int,int>> matches; 
-       
+
        PairContainer * matcher = new PairContainer(min,max,diffThresh);
-		
-		
-       // vector<ForwardTr *> * nList = new vector<ForwardTr *>*;		
+	
         Candidate * curr;
 		Candidate * match;
 		BackwardTr * pair;
 		for (int i = 0; i < plateaus.size(); i++)
 		{
 			curr = plateaus.at(i);
-		
-			//cout<<"curr:"<<curr->getStart()<<","<<curr->getEnd()<<","<<curr->getHeight()<<endl;
-			
-			//int currStart = curr.getStart();
-			//int currEnd = curr.getEnd();
-			//int currHeight = curr.getHeight();
-           // cout<<"currStart:"<<currStart<<"currEnd"<<currEnd<<endl;
-
-			/*if(matches.size()>0){
-				
-				int stackStart;
-				int stackEnd;
-				std::tie(stackStart, stackEnd) = matches.top();
-				//cout<<stackStart<<","<<stackEnd<<endl;
-
-				if (isMatch(stackStart,currStart))
-				{
-					matches.pop();
-					
-					ForwardTr *match = new ForwardTr(stackStart, stackEnd, currStart, currEnd);
-					fList->push_back(match);
-                    
-					
-				}
-				elsecandidate
-				{
-					matches.push(curr);
-					
-				}
-			}
-			else{
-				matches.push(curr);
-				
-			}*/
-		//	cout<<"Entering hash"<<endl;
-             match = matcher->hashOrReturn(curr);
-		//	cout<<"Returning from hash"<<endl;
-
+            match = matcher->hashOrReturn(curr);
 			if(match!=nullptr){
-			//	cout<<"Inside match found"<<endl;
-				//cout<<"s1->"<<match->getStart()<<"e1->"<<match->getEnd()<<"s2->"<<curr->getStart()<<"e2->"<<curr->getEnd()<<endl;
 				pair = new BackwardTr(match->getStart(), match->getEnd(), curr->getStart(), curr->getEnd());
-				//cout<<pair->toString()<<endl;
 				bList->push_back(pair);
-				//delete pair;
-			
-			}
-			//delete curr;
-			//delete match;
-	}
-	//matcher->empty();
 
+			}
+	}
 		
 } 
+
 bool MatchTr::isMatch(int firstStart,int secondStart){
 
 	int firstHeight = scoreList->at(firstStart);
 
-
 	int matchLoc = firstStart + firstHeight;
-  //  cout<<"matchLoc:"<<matchLoc<<" secondStart:"<<secondStart<<endl;
+
 	return matchLoc == secondStart;
 
 }
@@ -424,42 +332,12 @@ vector<BackwardTr *> * MatchTr::getRepeatCandidates(){
 }
 
 MatchTr::~MatchTr(){
-scoreList->clear();
-//delete scoreList;
-
-bList->clear();
-delete bList;
-
+	bList->clear();
+	delete bList;
 }
 
-void MatchTr::printFinalScores(int start, int end)
-{
-
-	ofstream output;
-
-	output.open("../output/cleanedScores.csv");
-	int len = end > scoreList->size() ? scoreList->size() : end;
-
-	for (int i = start; i < len; i++)
-	{
-
-		output << i << "," << scoreList->at(i) << endl;
-	}
-	output.close();
+vector<int>* MatchTr::getScoreList(){
+	return scoreList;
 }
 
-void MatchTr::bedFormat(int start, int end)
-{
-    cout<<bedFileName<<endl;
-    ofstream output;
-    output.open(bedFileName);
-
-    for (int i = 0; i < bList->size(); i++)
-    {
-        BackwardTr *curr = bList->at(i);
-
-        output << "chrX"<< "	" << curr->getS1() << "	" << curr->getE2()<< endl;
-    }
-    output.close();
-}
 }

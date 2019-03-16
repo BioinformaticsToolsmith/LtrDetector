@@ -48,10 +48,12 @@ public:
 	static bool isOverlapping(int, int, int, int);
 	static void revCompDig(string *, string *);
 	static void revCompDig(const char* sequence, int, int, string *);
+	static string oneDigitToNuc(const string &input);
 
 	static void writeFasta(const string&, const string&, const string&);
 
 	static int sumTotalLength(const vector<ILocation *> *);
+
 
 	/**
 	 * Delete the objects pointed to by pointers in a vector.

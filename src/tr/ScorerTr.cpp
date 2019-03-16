@@ -1,4 +1,3 @@
-
 /*
  * ScorerTr.cpp
  *
@@ -30,22 +29,13 @@ namespace tr {
 
 const int ScorerTr::INITIAL_VALUE = -10;
 const int ScorerTr::INITIAL_SCORE = 0;
-//const int ScorerTr::MIN_PLATEAU_LENGTH = 50; 
-//const int ScorerTr::DIFF_THRESHOLD = 20;
-//const int ScorerTr::GAP_TOLERANCE = 14;
 
 ScorerTr::ScorerTr(ChromosomeOneDigit *chromIn, int motifSizeIn, int minIn,int maxIn)
 {
-
 	chrom = chromIn;
 	k = motifSizeIn;
 	min = minIn;
 	max = maxIn;
-//	minPlateauLen = plateauLenIn;
-	//diffThresh = diffThreshIn;
-	//gapTol = gapTolIn;
-	//csvFileName = csvFileNameIn;
-    //bedFileName = bedFileNameIn;
 
 	if (max < min) {
 		string msg(
@@ -60,11 +50,8 @@ ScorerTr::ScorerTr(ChromosomeOneDigit *chromIn, int motifSizeIn, int minIn,int m
 
 	kmerTable = new KmerHashTable<int,int>(k, INITIAL_VALUE);
 	scoreList = new vector<int>(chrom->getBase()->size(), INITIAL_SCORE);
-//	fList = new vector<ForwardTr *>();
-    // score();
+
 	scoreNew();
-//	cleanAndMerge();
-	//medianSmooth();
 }
 
 ScorerTr::~ScorerTr() {
@@ -112,26 +99,18 @@ void ScorerTr::score() {
 		for (int i = end - k + 2; i <= end; i++) {
 			(*scoreList)[i] = scoreList->at(i - 1);
 		}
-
-
-
-
 	}
+
+	// Test code
 	ofstream output;
-
 	string file1 = "scores.txt";
-
-
 	output.open(file1);
-
 	cout<<"Before: " << endl;
 	for(auto e : *scoreList){
-
         output << e<< " ";
-		//cout << e << " ";
 	}
-	//cout << endl;
 	output<<endl;
+	// End test code
 
 	// Generate distance --- positive and negative --- from indexes.
 	for(int i = 0;i<scoreList->size();i++){
@@ -141,15 +120,14 @@ void ScorerTr::score() {
 		}
 	}
 
+	// Test code
 	cout << "After: " << endl;
-	for (auto e : *scoreList)
-	{   output <<e<<" ";
-		//cout << e << " ";
+	for (auto e : *scoreList){   
+		output <<e<<" ";
 	}
-	//cout << endl;
-	output <<endl;
-
+	output << endl;
 	output.close();
+	// End test code
 }
 
 void ScorerTr::scoreNew() {
@@ -160,8 +138,6 @@ void ScorerTr::scoreNew() {
 	for (int s = 0; s < segment->size(); s++) {
 		int start = segment->at(s)->at(0);
 		int end = segment->at(s)->at(1);
-
-		//cout << "start:" << start << "end:" <<end<< endl;
 
 		vector<int> * hashList = new vector<int>();
 		kmerTable->hash(segBases, start, end - k + 1, hashList);
@@ -175,16 +151,11 @@ void ScorerTr::scoreNew() {
 				int d1 = abs(i - lastIndex);
 				if (d1 >= min && d1 <= max)
 				{
-				//	(*scoreList)[i] = d1;
 					(*scoreList)[i] = lastIndex -i;
-					int scoreAtLastIndex = scoreList->at(lastIndex); //800
-
-					/*if (scoreAtLastIndex == 0 || abs(lastIndex - scoreAtLastIndex) >= d1)*/
-						if (scoreAtLastIndex == INITIAL_SCORE || d1 < abs(scoreAtLastIndex))
-						{
-					
-							(*scoreList)[lastIndex] = i - lastIndex;
-							//	(*scoreList)[lastIndex] = d1;
+					int scoreAtLastIndex = scoreList->at(lastIndex); 
+					if (scoreAtLastIndex == INITIAL_SCORE || d1 < abs(scoreAtLastIndex))
+					{
+						(*scoreList)[lastIndex] = i - lastIndex;
 					}
 				}
 			}
@@ -194,32 +165,11 @@ void ScorerTr::scoreNew() {
 		hashList->clear();
 		delete hashList;
 
-
 		// Handle last word
 		for (int i = end - k + 2; i <= end; i++) {
 			(*scoreList)[i] = scoreList->at(i - 1);
 		}
-
 	}
-
-	/*ofstream output;
-
-	string file1 = "scores.txt";
-
-	output.open(file1);
-
-	cout << "Before: " << endl;
-	for (auto e : *scoreList)
-	{
-
-		output << e << " ";
-		//cout << e << " ";
-	}
-	//cout << endl;
-	output << endl;
-
-
-	output.close();*/
 }
 
 int ScorerTr::findMedian(int start, int end)
@@ -272,7 +222,6 @@ void ScorerTr::medianSmooth()
 		temp->push_back(score);
 	}
 
-	
 	scoreList->clear();
 	scoreList = temp;
 }
@@ -281,51 +230,8 @@ vector<int>* ScorerTr::getScores() {
 	return scoreList;
 }
 
-
 int ScorerTr::getInitialScore() {
 	return INITIAL_SCORE;
 }
-
-
-
-/**
- * Ouputs csv file of distance between k-mers (Testing only)
-*/	
-
-void ScorerTr::scoresFormat(int start, int end){
-
-  /*  ofstream output;
-	output.open("../src/output/results.csv");
-    int step = 50;
-	int len = end > scoreList->size() ? scoreList->size() : end;
-	int lineCounter = 1;
-	for (int i = start; i < len; i = i + step) {
-		int e = (i + step - 1 > len - 1) ? len - 1 : i + step - 1;
-		for (int k = i; k <= e; k++) {
-			output << scoreList->at(k) << ",";
-		}
-		output << endl;
-	}
-	output << endl;
-
-	output.close();*/
-	
-
-	ofstream output;
-	const string * base = chrom->getBase();
-	
-	output.open("../output/rawScores.csv");
-	int len = end > scoreList->size() ? scoreList->size() : end;
-	//cout<<"START="<<start<<endl;
-	//cout<<"LEN="<<len<<endl;
-
-	for (int i = start;i<len;i++){
-
-		 output << i << "," << scoreList->at(i)<< endl;
-	}
-	output.close();
-
-}
-
 
 }

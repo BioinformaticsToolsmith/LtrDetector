@@ -15,6 +15,8 @@
 #include "../utility/Location.h"
 #include "../utility/TailFinder.h"
 #include "../utility/TSD.h"
+#include <algorithm>
+#include <cmath>
 
 using namespace utility;
 using namespace std;
@@ -50,15 +52,24 @@ void TrSineVisitor::visit(Tr* ltr) {
 	Location * loc2 = new Location(s2, e2);
 
 	// Find PloyA tail in the first LTR
-	int win1 = (e1 - s1 + 1) / 2;  // checking the first half 
+	//int win1 = (e1 - s1 + 1) / 2;  // checking the first half 
 
-	TailFinder * f1 = new TailFinder(seq, loc1, TailFinder::MARK_A, win1,
+	int win1 = calculateTailWindow(0.02,loc1->getLength(),50);
+
+	cout<<"PolyA window 1: "<<win1<<endl;
+
+	int seedLen = 5;
+	int gapLen = 2;
+
+
+	TailFinder * f1 = new TailFinder(seq, loc1, TailFinder::MARK_A, seedLen,gapLen, win1,
 			tailT);
 
 	// Find PolyA tail in the second LTR
-	int win2 = (e2 - s2 + 1) / 2;
+	int win2 = calculateTailWindow(0.02,loc2->getLength(),50);
+	cout<<"PolyA window 2: "<<win2<<endl;
 	
-	TailFinder * f2 = new TailFinder(seq, loc2, TailFinder::MARK_A, win2,
+	TailFinder * f2 = new TailFinder(seq, loc2, TailFinder::MARK_A,seedLen,gapLen, win2,
 			tailT);
 
 	// Make sure that the two tails are on the same strand
@@ -92,6 +103,16 @@ void TrSineVisitor::visit(Tr* ltr) {
 bool TrSineVisitor::isTwoSines() {
 	return foundTwoSines;
 }
+
+
+// calculate search window based on minimum and size of interior
+int TrSineVisitor::calculateTailWindow(double ratio, int lengthElement, int minimum){
+	// cout << "length interior: " << lengthElement << endl;	
+	int limit = lengthElement > minimum ? minimum : lengthElement;
+	int scaled = ceil(ratio*lengthElement);
+	return scaled > limit ? scaled : limit;
+}
+
 
 /*
  bool TrSineVisitor::isLtrSine(int s, int e) {

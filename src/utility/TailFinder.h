@@ -22,9 +22,10 @@ private:
 	ILocation * loc;
 	int whichTail;
 	int win;
+	int minLen;
+
 	int seedLen;
 	int gapLen;
-	int minLen;
 
 	vector<int> * tail;
 
@@ -32,11 +33,12 @@ private:
 	void findMarkA(string *, vector<int> *, int, int);
 	void findMarkP(string *, vector<int> *, int, int);
 
+
 public:
 	string prettyFormatChrom(string *);
 	static const int MARK_A = 1;
 	static const int MARK_P = 2;
-	TailFinder(const string *, ILocation *, int, int, int);
+	TailFinder(const string *, ILocation *, int, int,int,int, int);
 	virtual ~TailFinder();
 	vector<int> * getTail();
 	bool isTailFound();

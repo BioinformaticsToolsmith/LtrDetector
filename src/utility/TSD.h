@@ -22,6 +22,7 @@ private:
 public:
 	TSD(const string *, ILocation *, int, int);
 	TSD(ITSD&);
+	TSD(ITSD&,int);
 	virtual ~TSD();
 
 	virtual ILocation * getLtTsd();

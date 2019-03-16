@@ -20,6 +20,11 @@ Tail::Tail(ITail& copy) {
 			copy.getPercentage());
 }
 
+Tail::Tail(ITail& copy,int offset) {
+	initialize(copy.getStart()+offset, copy.getEnd()+offset, copy.getStrand(),
+			copy.getPercentage());
+}
+
 void Tail::initialize(int startIn, int endIn, string strandIn,
 		double percentageIn) {
 	start = startIn;
@@ -53,13 +58,13 @@ int Tail::getLength() {
 }
 
 string Tail::toString() {
-	string msg = ("Tail ");
+	string msg ="";
 	msg.append(Util::int2string(start));
-	msg.append("-");
+	msg.append("\t");
 	msg.append(Util::int2string(end));
-	msg.append(" Tail_Strand ");
+	msg.append("\t");
 	msg.append(strand);
-	msg.append(" Tail_Percentage ");
+	msg.append("\t");
 	msg.append(Util::double2string(percentage));
 	return msg;
 }
