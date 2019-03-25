@@ -228,7 +228,27 @@ int main(int argc, char * argv[]) {
 		}
 	}
 
-	Util::deleteFilesUnderDirectory(outputDir);
+	//Util::deleteFilesUnderDirectory(outputDir);
+
+
+	//delete previous output files
+
+	for (const auto & entry : fs::directory_iterator(outputDir)){
+
+		string fileName = entry.path();
+
+        cout << fileName <<endl;
+
+		const string detectorEnding = "Detector.bed";
+
+		if(fileName.length()>= detectorEnding.length() && !fileName.compare(fileName.length()-detectorEnding.length(),detectorEnding.length(),detectorEnding)){
+
+			std::remove(fileName.c_str());
+			cout<<"Deleted old output file: "<<fileName<<endl;
+
+		}
+	}
+	
 
 	cout << "Reading chromosome directory ..." << endl;
 	Util::readChromList(chromDir, chromList,"fa");
