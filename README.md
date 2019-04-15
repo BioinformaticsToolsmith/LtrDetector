@@ -54,7 +54,7 @@ Step 3: Activate virtual environment
 Step 4: Install python dependencies
 ``` pip install -r requirements.txt ```
 
-Step 2: To run the visualization tool on chr1, pass LTR-RTs found in chr1 (.bed), output directory where the graphs will be stored, and the scores file (raw or cleaned).
+Step 5: To run the visualization tool on chr1, pass LTR-RTs found in chr1 (.bed), output directory where the graphs will be stored, and the scores file (raw or cleaned).
   
  ```python visualize.py ~/Data/thaliana/detector/chr1Detector.bed ~/Data/thaliana/detector/test ~/Data/thaliana/detector/chr1RawScores.csv```
 
