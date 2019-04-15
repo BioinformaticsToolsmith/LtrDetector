@@ -45,6 +45,15 @@ Step 1: Run LtrDetector with these three flags -rawScores -cleanedScores -bedFor
   
 ```LtrDetector -chromDir ~/Data/thaliana/Fa -destDir ~/Data/thaliana/detector -rawScores -cleanedScores -bedFormat```
 
+Step 2: Create a virtual environment using venv module of Python3
+``` python3 -m venv myEnvironment```
+
+Step 3: Activate virtual environment
+``` source myEnvironment/bin/activate ```
+
+Step 4: Install python dependencies
+``` pip install -r requirements.txt ```
+
 Step 2: To run the visualization tool on chr1, pass LTR-RTs found in chr1 (.bed), output directory where the graphs will be stored, and the scores file (raw or cleaned).
   
  ```python visualize.py ~/Data/thaliana/detector/chr1Detector.bed ~/Data/thaliana/detector/test ~/Data/thaliana/detector/chr1RawScores.csv```
