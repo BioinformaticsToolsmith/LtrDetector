@@ -27,7 +27,7 @@ def slice(bedfile,name, score_file):
 
     for el in coords:
 
-        print el
+        print(el)
         start = int(el[0])
         end = int(el[1])
 
@@ -38,7 +38,7 @@ def slice(bedfile,name, score_file):
         
 
         bounds =[start,mid1,mid2,end-1]
-        print bounds
+        print(bounds)
         
         slice =name+"/"+el[0]+"-"+el[1]+".png"
 
