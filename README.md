@@ -47,11 +47,13 @@ Step 1: Run LtrDetector with these three flags -rawScores -cleanedScores -bedFor
 
 Step 2: Create a virtual environment using venv module of Python3
 ``` python3 -m venv myEnvironment```
+myEnvironment is the name of a folder that will house your virtual environment. You can name it whatever you want.
 
 Step 3: Activate virtual environment
 ``` source myEnvironment/bin/activate ```
+You must now run the following commands from the same terminal. If you want to use multiple terminals, the virtual environment must be activated in all of them.
 
-Step 4: Install python dependencies
+Step 4: Install python dependencies using provided requirements.txt file.
 ``` pip install -r requirements.txt ```
 
 Step 5: To run the visualization tool on chr1, pass LTR-RTs found in chr1 (.bed), output directory where the graphs will be stored, and the scores file (raw or cleaned).
