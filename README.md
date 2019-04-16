@@ -17,8 +17,11 @@ Run this command to see list of gcc files installed by HomeBrew:
 
 Example:
 joseph:LtrDetector jdv$ brew list gcc
+
 /usr/local/Cellar/gcc/8.2.0/bin/c++-8
+
 /usr/local/Cellar/gcc/8.2.0/bin/cpp-8
+
 /usr/local/Cellar/gcc/8.2.0/bin/g++-8
 
 On Makefile, change the CXX value to g++-Version as indicated by the listing. In the example above,
