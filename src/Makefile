@@ -1,5 +1,4 @@
-CXX= g++-8  #Linux(Ubuntu)
-#CXX = /usr/bin/g++ #MacOS
+CXX= g++-8  
 
 CXXFLAGS = -std=c++17 -g -O3 -fopenmp -fmessage-length=0 # Linux
 #CXXFLAGS = -Xpreprocessor -fopenmp -lomp  -std=c++17 -g -O3 -fmessage-length=0 #MacOS
