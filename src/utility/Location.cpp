@@ -66,7 +66,7 @@ int Location::getLength() {
 
 string Location::toString() {
 	string msg = (Util::int2string(start));
-	msg.append("-");
+	msg.append("\t");
 	msg.append(Util::int2string(end));
 
 	return msg;

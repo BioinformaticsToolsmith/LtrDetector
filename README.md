@@ -58,6 +58,29 @@ To find help information:
 
 ```LtrDetector -chromDir ~/Data/thaliana/Fa -destDir ~/Data/thaliana/detector -nThreads 4```
 
+### Output Explanation
+
+LtrDetector output is formatted as a BED file with 15 columns, which correspond to:
+
+1. Sequence identifier.
+2. Retrotransposon start coordinate within sequence.
+3. Retrotransposon end coordinate within sequence.
+4. Left LTR start coordinate.
+5. Left LTR end coordinate.
+6. Right LTR start coordinate.
+7. Right LTR end coordinate.
+8. % Identity between left and right LTRs (0-100).
+9. Left Target Site Duplication start coordinate.
+10. Left Target Site Duplication end coordinate.
+11. Right Target Site Duplication start coordinate.
+12. Right Target Site Duplication end coordinate.
+13. Polypurine Tract start coordinate.
+14. Polupurine Tract end coordinate.
+15. Strand on chromosome (+ or -).
+16. Percentage of purines in Polypurine Tract (0-100).
+
+Dashes on any column pertaining to the Target Site Duplication or Polypurine Tract indicate that no such element was found.
+
 
 ### To run visualization tool:
 
