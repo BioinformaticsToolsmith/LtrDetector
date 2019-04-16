@@ -28,12 +28,9 @@ On Makefile, change the CXX value to g++-Version as indicated by the listing. In
 CXX = g++-8
 
 ### Linux (Ubuntu)
+The GNU compiler comes standard. If you do not have it, run:
 
-Run:
 ``` sudo apt-get install gcc ```
-
-On Makefile, change the CXX value to g++.
-CXX = g++
 
 ## Compile
 
