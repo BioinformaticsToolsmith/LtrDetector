@@ -4,23 +4,43 @@ https://www.biorxiv.org/content/biorxiv/early/2018/10/22/448969.full.pdf
 
 
 
-### Compiling source code
+## Compiling source code
 
-Requirement: GNU gcc8.2 or higher. Please change the name (CXX) of the compiler 
-	in the Makefile. 
+You must have the GNU compiler. Follow the steps to obtain a compatible version.
 
-If on MacOS, please uncomment the compiler flags (CXXFLAGS) in the Makefile. (Marked #MacOS). 
+###  MacOS
+Use HomeBrew:
+	``` brew install gcc```
 
-On MacOS you may need to run:
-	``` brew install libomp```
+Run this command to see list of gcc files installed by HomeBrew:
+```brew list gcc ```
+
+Example:
+joseph:LtrDetector jdv$ brew list gcc
+/usr/local/Cellar/gcc/8.2.0/bin/c++-8
+/usr/local/Cellar/gcc/8.2.0/bin/cpp-8
+/usr/local/Cellar/gcc/8.2.0/bin/g++-8
+
+On Makefile, change the CXX value to g++-Version as indicated by the listing. In the example above,
+CXX = g++-8
+
+### Linux (Ubuntu)
+
+Run:
+``` sudo apt-get install gcc ```
+
+On Makefile, change the CXX value to g++.
+CXX = g++
+
+## Compile
 
 To locate the source directory:
 	``` cd src	```
 
-The following command makes the required directories: 
+The following command makes the required directories:
 	``` make bin```
 
-The following command makes the binary that is located under the ``bin'' directory:
+The following command makes the binary that is located under the ``bin`` directory:
 	``` make tr -j```
 
 To find the binary:
@@ -28,7 +48,7 @@ To find the binary:
 
 To find help information:
 ``` LtrDetector -help ```
-  
+
 
 ### Example run with the defaults:
 
@@ -41,8 +61,8 @@ To find help information:
 
 ### To run visualization tool:
 
-Step 1: Run LtrDetector with these three flags -rawScores -cleanedScores -bedFormat 
-  
+Step 1: Run LtrDetector with these three flags -rawScores -cleanedScores -bedFormat
+
 ```LtrDetector -chromDir ~/Data/thaliana/Fa -destDir ~/Data/thaliana/detector -rawScores -cleanedScores -bedFormat```
 
 Step 2: Create a virtual environment using venv module of Python3
@@ -57,7 +77,7 @@ Step 4: Install python dependencies using provided requirements.txt file.
 ``` pip install -r requirements.txt ```
 
 Step 5: To run the visualization tool on chr1, pass LTR-RTs found in chr1 (.bed), output directory where the graphs will be stored, and the scores file (raw or cleaned).
-  
+
  ```python visualize.py ~/Data/thaliana/detector/chr1Detector.bed ~/Data/thaliana/detector/test ~/Data/thaliana/detector/chr1RawScores.csv```
 
 | -arg     | Description | Default |
@@ -80,7 +100,7 @@ Step 5: To run the visualization tool on chr1, pass LTR-RTs found in chr1 (.bed)
 | -nested | searches for nested elements. Results are stored in seperate files (marked as xxxxNestedDetector.bed) under the output directory | disabled |
 | -bedFormat | prints BED format without additional annotations (PPT and TSD). | disabled |
 | -help | prints this help message. | disabled |
-	
+
 
 ### License
 
