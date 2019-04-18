@@ -71,7 +71,7 @@ int main(int argc, char * argv[]) {
 	string helpMessage = 
 	"| -arg     | Description | Default |\n"
 	"| ---------------- | ----------- | ------- |\n"
-	"| -chromDir | Directory containing files to be scanned. Files must have .fa extension. | required |\n"
+	"| -fasta | Directory containing files to be scanned. Files must have .fa extension. | required |\n"
 	"| -destDir | Output directory where the results are stored. | required |\n"
 	"( IMPORTANT: Files under the output directory are deleted at the start of the program.)\n"
 	"| -minLen | Minimum length of complete LTR-RTs. Constrains scoring system and filters. | 400 |\n"
@@ -136,7 +136,7 @@ int main(int argc, char * argv[]) {
 			
 		}
 
-	auto src = std::find(argList->begin(),argList->end(),"-chromDir");
+	auto src = std::find(argList->begin(),argList->end(),"-fasta");
 
 	if(src!=argList->end() & ++src !=argList->end()){
 
@@ -144,7 +144,7 @@ int main(int argc, char * argv[]) {
 	}
 
 	else{
-		cout<<" \'-chromDir\' is a required argument"<<endl;
+		cout<<" \'-fasta\' is a required argument"<<endl;
 		exit(1);
 	}
 

@@ -12,6 +12,7 @@
 #include "../utility/ITSD.h"
 #include "../utility/TSD.h"
 #include "../utility/ITail.h"
+#include "../utility/EmptyLocation.h"
 
 using namespace utility;
 
@@ -28,6 +29,7 @@ private:
 	string toStringHelper();
 	bool nested;
 	bool deleted = false;
+	ILocation * tgCaMotif;
 
 public:
 	LtrTe(BackwardTr *, ITSD *, ITail *);
@@ -58,6 +60,7 @@ public:
 	void setDeleted(bool);
 
 	static bool lessThan(LtrTe* a, LtrTe* b);
+	ILocation * getTgCaMotif(const string* sequence);
 
 
 };

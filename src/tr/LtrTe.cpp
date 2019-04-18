@@ -15,6 +15,7 @@
 #include "../utility/Tail.h"
 #include "../utility/EmptyTail.h"
 #include "../utility/EmptyTSD.h"
+#include "../utility/Util.h"
 
 using namespace utility;
 using namespace exception;
@@ -74,6 +75,7 @@ LtrTe::LtrTe(LtrTe& another, int offset) {
 
 void LtrTe::initializer(BackwardTr * ltrIn, ITSD * tsdIn, ITail * pptIn) {
 	ltr = new BackwardTr(*ltrIn);
+	tgCaMotif = EmptyLocation::getInstance();
 
 	setTsd(tsdIn);
 	setPpt(pptIn);
@@ -106,12 +108,17 @@ void LtrTe::initializer(BackwardTr * ltrIn, ITSD * tsdIn, ITail * pptIn) {
 
 LtrTe::~LtrTe() {
 	delete ltr;
+	
 	if (tsd != EmptyTSD::getInstance()) {
 		delete tsd;
 	}
 
 	if (ppt != EmptyTail::getInstance()) {
 		delete ppt;
+	}
+
+	if(tgCaMotif != EmptyLocation::getInstance()){
+		delete tgCaMotif;
 	}
 }
 
@@ -202,8 +209,16 @@ void LtrTe::setTsd(ITSD* tsdIn) {
 		
 	} else {
 		tsd = new TSD(*tsdIn);
-		s = tsd->getLtTsd()->getStart();
-		e = tsd->getRtTsd()->getEnd();
+		s = tsd->getLtTsd()->getEnd()+1;
+		e = tsd->getRtTsd()->getStart()-1;
+		//s = tsd->getLtTsd()->getStart();
+		//e = tsd->getRtTsd()->getEnd();
+
+		if(e<=s){
+			cerr<<"Error in setting TSD"<<endl;
+
+			throw std::exception();
+		}
 	}
 }
 
@@ -218,4 +233,34 @@ bool LtrTe::getDeleted(){
 void LtrTe::setDeleted(bool status){
 	deleted = status;
 }
+
+/*
+* Find the first TG in whole element
+* Find the last CA in the whole element
+* Author: Joseph Valencia and Hani Girgis
+*/
+ILocation * LtrTe::getTgCaMotif(const string* sequence){
+
+	int window = 20;
+	string left =sequence->substr(s,window );
+	string right = sequence->substr(e-window+1,window);
+	string leftWindow = Util::oneDigitToNuc(left);
+	string rightWindow =  Util::oneDigitToNuc(right);
+
+	int startTG = leftWindow.find("TG");
+	int endCA = rightWindow.rfind("CA");
+
+	if(startTG != string::npos && endCA != string::npos){
+		tgCaMotif = new Location(startTG +s, endCA+e-window+1);
+	}
+
+	cout<<"startTG "<<startTG<<" endCA "<<endCA<<endl;
+	// pair<int,int> answer = std::make_pair(startTG,endCA);
+	return tgCaMotif;
+
+	// Modify
+	// If one of them is -1, return empty location
+	// Otherwise, return location
+}
+
 } /* namespace tr */

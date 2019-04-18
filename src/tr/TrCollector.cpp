@@ -20,6 +20,7 @@
 #include "../utility/ITSD.h"
 #include "../utility/EmptyTSD.h"
 #include "../utility/EmptyTail.h"
+#include "../utility/EmptyLocation.h"
 #include "../nonltr/ChromosomeOneDigit.h"
 
 #include "../utility/Util.h"
@@ -150,8 +151,8 @@ void TrCollector::outputAnnotation(vector<LtrTe*> * myTEList, string fileName)
 
 	if(!bedFormat){
 
-	output<<"Retrotransposon"<<"\t"<<"Left_LTR"<<"\t"<<"Right_LTR"<<"\t\t"<<"Left_TSD"<<"\t"<<"Right_TSD"<<"\t"<<"Polypurine Tract"<<endl;
-	output<<"Start"<<"\t"<<"End"<<"\t"<<"Start"<<"\t"<<"End"<<"\t"<<"Start"<<"\t"<<"End"<<"\t"<<"ID"<<"\t"<<"Start"<<"\t"<<"End"<<"\t"<<"Start"<<"\t"<<"End"<<"\t"<<"Start"<<"\t"<<"End"<<"\t"<<"Strand"<<"\t"<<"Purine%%"<<endl;
+	output<<"SeqID"<<"\t"<<"Retrotransposon"<<"\t"<<"Left_LTR"<<"\t"<<"Right_LTR"<<"\t\t"<<"Left_TSD"<<"\t"<<"Right_TSD"<<"\t"<<"Polypurine Tract"<<"\t\t"<<"TG"<<"\t"<<"CA"<<endl;
+	output<<"\t"<<"Start"<<"\t"<<"End"<<"\t"<<"Start"<<"\t"<<"End"<<"\t"<<"Start"<<"\t"<<"End"<<"\t"<<"ID"<<"\t"<<"Start"<<"\t"<<"End"<<"\t"<<"Start"<<"\t"<<"End"<<"\t"<<"Start"<<"\t"<<"End"<<"\t"<<"Strand"<<"\t"<<"Purine\%"<<"\t"<<"Start"<<"\t"<<"End"<<endl;
 	}
 	for (int i = 0; i < size; i++)
 	{
@@ -160,12 +161,14 @@ void TrCollector::outputAnnotation(vector<LtrTe*> * myTEList, string fileName)
 		BackwardTr* ltr = curr->getLtr();
 
 		if(bedFormat){
-			output << chrom->getHeader().substr(1) << "\t" << curr->getStart() << '\t' << curr->getEnd() << "\t" << curr->getStart()<< '\t' << ltr->getE1() << "\t" << ltr->getS2() << '\t' << curr->getEnd()<< endl;
+			output << chrom->getHeader().substr(1) << "\t" << curr->getStart() << '\t' << curr->getEnd() << "\t" << ltr->getS1()<< '\t' << ltr->getE1() << "\t" << ltr->getS2() << '\t' << ltr->getE2()<< endl;
 		}
 		else{
-
+			output << chrom->getHeader().substr(1) << "\t";
 			int id = ltr->getIdentity();
-			output << curr->getStart()<< '\t' << curr->getEnd() << "\t" << curr->getStart() << '\t' << ltr->getE1()<<"\t"<<ltr->getS2()<< "\t" << curr->getEnd()<<"\t"<<id<<"\t" ;
+			output << curr->getStart()<< '\t' << curr->getEnd() << "\t" << ltr->getS1() << '\t' << ltr->getE1()<<"\t"<<ltr->getS2()<< "\t" <<ltr->getE2()<<"\t"<<id<<"\t" ;
+
+			//NOTE: if either member of pair is string::no_pos then print dash
 
 
 			ITail * ppt = curr->getPpt();	
@@ -185,13 +188,22 @@ void TrCollector::outputAnnotation(vector<LtrTe*> * myTEList, string fileName)
 
 			if(ppt != EmptyTail::getInstance()){
 
-				output<<ppt->toString()<<endl;
+				output<<ppt->toString()<<"\t";
 			}
 
 			else{
 
-				output<<"---"<<"\t"<<"---"<<"\t"<<"0"<<"\t"<<"--"<<endl;
+				output<<"---"<<"\t"<<"---"<<"\t"<<"0"<<"\t"<<"--"<<"\t";
 
+			}
+
+			ILocation * tgcaMotif = curr->getTgCaMotif(chrom->getBase());
+
+			if(tgcaMotif!=EmptyLocation::getInstance()){
+				output<<tgcaMotif->toString()<<endl;;
+			}
+			else{
+				output<<"---"<<"\t"<<"---"<<endl;
 			}
 		}
 	}
