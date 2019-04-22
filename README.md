@@ -60,7 +60,7 @@ To find help information:
 
 ### Output Explanation
 
-LtrDetector output is formatted as a BED file with 15 columns, which correspond to:
+LtrDetector output is formatted as a BED file with 18 columns, which correspond to:
 
 1. Sequence identifier.
 2. Retrotransposon start coordinate within sequence.
@@ -78,8 +78,14 @@ LtrDetector output is formatted as a BED file with 15 columns, which correspond 
 14. Polupurine Tract end coordinate.
 15. Strand on chromosome (+ or -).
 16. Percentage of purines in Polypurine Tract (0-100).
+17. TG motif start coordinate.
+18. CA motif end coordinate.
 
 Dashes on any column pertaining to the Target Site Duplication or Polypurine Tract indicate that no such element was found.
+
+This output format provides up to three alternatives for the boundary of the element. Columns 2 and 3 are set to be immediately inside of the TSDs if they exist,
+otherwise they are the boundaries denoted by the alignment adjustment step. Columns 4 and 7 report the alignment	
+adjusted boundaries directly. Columns 17 and 18 report the boundaries based on the TG..CA box, if one exists.
 
 
 ### To run visualization tool:

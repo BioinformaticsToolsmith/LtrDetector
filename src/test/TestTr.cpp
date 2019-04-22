@@ -61,6 +61,7 @@ int main(int argc, char * argv[]) {
 	int threads = 1;
 	string chromDir ="";
 	string outputDir = "";
+	bool seqLevel = false;
 	bool printRawScores = false;
 	bool printCleanScores = false;
 	bool displayHelp = false;
@@ -84,6 +85,7 @@ int main(int argc, char * argv[]) {
 	"| -plateauSeed | Minimum length of plateaus to be initially considered 'Keep' in merging step. | 10 |\n"
 	"| -nThreads | Number of cores to be used. | 1 |\n"
 	"| -gapTol | Number of base pairs that two plateaus can differ by in height/distance. Affects both plateau merging and pairing steps. | 200 |\n"
+	"|-seqLevel| Forces parallel execution on equences within multi-FASTA file. Useful when entire geneome or multiple contigs all in one file.|disabled|\n"
 	"| -rawScores | prints the raw scores to a file called xxxxRawScores.txt under the output directory. | disabled |\n"
 	"| -cleanedScores | prints the scores after merging to a file called xxxxCleanedScores.txt under the output directory. | disabled |\n"
 	"| -nested | searches for nested elements. Results are stored in seperate files (marked as xxxxNestedDetector.bed) under the output directory | disabled |\n"
@@ -215,6 +217,14 @@ int main(int argc, char * argv[]) {
 		threads = test;
 	}
 
+	auto level = std::find(argList->begin(),argList->end(),"-seqLevel");
+
+			if(level!=argList->end() && threads >1){
+
+			seqLevel= true;
+			
+		}
+
 
 	vector <string> * chromList = new vector<string>();
 
@@ -265,31 +275,56 @@ int main(int argc, char * argv[]) {
 	cout<<minPlateauLength<<endl;
 	cout<<gapTol<<endl;
 	
-	#pragma omp parallel for schedule(dynamic) num_threads(threads)
-	for (int i = 0; i < chromList->size(); i++)
-	{
+	if(!seqLevel){
+		#pragma omp parallel for schedule(dynamic) num_threads(threads)
+		for (int i = 0; i < chromList->size(); i++)
+		{
 
-		string chromFile = chromList->at(i);
+			string chromFile = chromList->at(i);
 
-		int nameBegin = chromFile.find_last_of("/")+1;
-		int nameEnd = chromFile.find_last_of(".") ;
-		int len = nameEnd - nameBegin ;
+			int nameBegin = chromFile.find_last_of("/")+1;
+			int nameEnd = chromFile.find_last_of(".") ;
+			int len = nameEnd - nameBegin ;
 
-		string name = chromFile.substr(nameBegin,len);
+			string name = chromFile.substr(nameBegin,len);
 
-		string outFile = outputDir+"/"+name;
-		ChromListMaker chromListMaker(chromFile);
-		const vector<ChromosomeOneDigit *> *  chromList = chromListMaker.makeChromOneDigitList();
-		for(auto chrom : *chromList){
-			TrCollector * collector = new TrCollector(chrom, outFile,name, minDist, maxDist, minLenLTR, maxLenLTR,identity,k, minPlateauLength, gapTol,printCleanScores,printRawScores,bedOutput,displayNested);
-			
-			delete collector;
+			string outFile = outputDir+"/"+name;
+			ChromListMaker chromListMaker(chromFile);
+			const vector<ChromosomeOneDigit *> *  chromList = chromListMaker.makeChromOneDigitList();
+			for(auto chrom : *chromList){
+				TrCollector * collector = new TrCollector(chrom, outFile,name, minDist, maxDist, minLenLTR, maxLenLTR,identity,k, minPlateauLength, gapTol,printCleanScores,printRawScores,bedOutput,displayNested);
+				
+				delete collector;
+			}
 		}
+	}else{
+		for (int i = 0; i < chromList->size(); i++)
+		{
+
+			string chromFile = chromList->at(i);
+
+			int nameBegin = chromFile.find_last_of("/")+1;
+			int nameEnd = chromFile.find_last_of(".") ;
+			int len = nameEnd - nameBegin ;
+
+			string name = chromFile.substr(nameBegin,len);
+
+			string outFile = outputDir+"/"+name;
+			ChromListMaker chromListMaker(chromFile);
+			const vector<ChromosomeOneDigit *> *  chromList = chromListMaker.makeChromOneDigitList();
+			#pragma omp parallel for schedule(dynamic) num_threads(threads)
+			for(unsigned int j = 0; j < chromList->size(); j++){
+				auto chrom = chromList->at(j);
+				TrCollector * collector = new TrCollector(chrom, outFile,name, minDist, maxDist, minLenLTR, maxLenLTR,identity,k, minPlateauLength, gapTol,printCleanScores,printRawScores,bedOutput,displayNested);
+				
+				delete collector;
+			}
 	}
 
 	chromList->clear();
 	delete chromList;
 
 	return 0;
+	}
 }
 

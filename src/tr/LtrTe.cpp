@@ -254,7 +254,7 @@ ILocation * LtrTe::getTgCaMotif(const string* sequence){
 		tgCaMotif = new Location(startTG +s, endCA+e-window+1);
 	}
 
-	cout<<"startTG "<<startTG<<" endCA "<<endCA<<endl;
+	//cout<<"startTG "<<startTG<<" endCA "<<endCA<<endl;
 	// pair<int,int> answer = std::make_pair(startTG,endCA);
 	return tgCaMotif;
 

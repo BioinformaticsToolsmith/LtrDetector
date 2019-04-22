@@ -92,9 +92,11 @@ void TrCollector::collect() {
 
 	// Write regular TE
 	string regularFile = bedFileName+"Detector.bed";
-	outputAnnotation(teList,regularFile);
-
-	cout << "Output from: " << name << " found in: " << regularFile<< endl;
+	#pragma omp critical
+	{
+		outputAnnotation(teList,regularFile);
+		cout << "Output from: " << name << " found in: " << regularFile<< endl;
+	}	
 
 	// Free memory. The scorer requires large memory
 	delete matcher;
@@ -107,10 +109,13 @@ void TrCollector::collect() {
 		findNested();
 
 		// Write nested elements
-		string nestedFile = bedFileName+"NestedDetector.bed";
-		outputAnnotation(nestedTeList,nestedFile);
+		#pragma omp critical
+		{
+			string nestedFile = bedFileName+"NestedDetector.bed";
+			outputAnnotation(nestedTeList,nestedFile);
 
-		cout << " Nested output from: " << name << " found in: " << nestedFile << endl;
+			cout << " Nested output from: " << name << " found in: " << nestedFile << endl;
+		}
 	}
 
 	delete filter;
