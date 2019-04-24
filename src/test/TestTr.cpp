@@ -85,7 +85,7 @@ int main(int argc, char * argv[]) {
 	"| -plateauSeed | Minimum length of plateaus to be initially considered 'Keep' in merging step. | 10 |\n"
 	"| -nThreads | Number of cores to be used. | 1 |\n"
 	"| -gapTol | Number of base pairs that two plateaus can differ by in height/distance. Affects both plateau merging and pairing steps. | 200 |\n"
-	"|-seqLevel| Forces parallel execution on equences within multi-FASTA file. Useful when entire geneome or multiple contigs all in one file.|disabled|\n"
+	"|-seqLevel| Forces parallel execution on sequences within multi-FASTA file. Loads all sequences into memory | disabled |\n"
 	"| -rawScores | prints the raw scores to a file called xxxxRawScores.txt under the output directory. | disabled |\n"
 	"| -cleanedScores | prints the scores after merging to a file called xxxxCleanedScores.txt under the output directory. | disabled |\n"
 	"| -nested | searches for nested elements. Results are stored in seperate files (marked as xxxxNestedDetector.bed) under the output directory | disabled |\n"

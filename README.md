@@ -124,6 +124,7 @@ Step 5: To run the visualization tool on chr1, pass LTR-RTs found in chr1 (.bed)
 | -plateauSeed | Minimum length of plateaus to be initially considered 'Keep' in merging step. | 10 |
 | -nThreads | Number of cores to be used. | 1 |
 | -gapTol | Number of base pairs that two plateaus can differ by in height/distance. Affects both plateau merging and pairing steps. | 200 |
+|-seqLevel| Forces parallel execution on sequences within multi-FASTA file. Loads all sequences into memory|disabled|
 | -rawScores | prints the raw scores to a file called xxxxRawScores.txt under the output directory. | disabled |
 | -cleanedScores | prints the scores after merging to a file called xxxxCleanedScores.txt under the output directory. | disabled |
 | -nested | searches for nested elements. Results are stored in seperate files (marked as xxxxNestedDetector.bed) under the output directory | disabled |
